@@ -1,0 +1,49 @@
+# Bytecode e cache do Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Distribuição / empacotamento
+dist/
+build/
+*.egg-info/
+
+# Ambientes virtuais
+venv/
+env/
+ENV/
+.env/
+
+# Binários e documentação do FFmpeg
+# Descomente se quiser excluir FFmpeg do controle de versão
+ffmpeg/bin/
+ffmpeg/doc/
+
+# Arquivos de áudio
+# Por padrão, arquivos de áudio originais em brutos/ são ignorados
+# Se quiser incluir arquivos de exemplo, crie um diretório samples/
+brutos/*
+!brutos/.gitkeep
+tratados/*
+!tratados/.gitkeep
+
+# Arquivos específicos de IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+
+# Arquivos específicos do sistema operacional
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Logs e arquivos temporários
+*.log
+*.tmp
+
+# Configuração (você pode querer manter isso versionado)
+# Descomente se quiser excluir configurações do controle de versão
+# audiobom_config.json
