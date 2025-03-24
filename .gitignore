@@ -17,8 +17,9 @@ ENV/
 .env/
 
 # Binários e documentação do FFmpeg
-# Descomente se quiser excluir FFmpeg do controle de versão
 ffmpeg/
+ffmpeg/**
+**/LICENSE.txt
 
 # Arquivos de áudio
 # Por padrão, arquivos de áudio originais em brutos/ são ignorados
