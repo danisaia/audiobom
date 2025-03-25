@@ -15,7 +15,12 @@ class DownloadProgressBar(tqdm):
 
 def setup_ffmpeg():
     """Configura o caminho do FFmpeg no PATH antes de importar pydub"""
-    ffmpeg_dir = "ffmpeg/"
+    # Detecta se está rodando a partir do executável do PyInstaller
+    if getattr(sys, 'frozen', False):
+        application_path = os.path.dirname(sys.executable)
+        ffmpeg_dir = os.path.join(application_path, "ffmpeg")
+    else:
+        ffmpeg_dir = "ffmpeg/"
     
     # Define o nome do executável com base no sistema operacional
     if platform.system() == "Windows":
@@ -28,8 +33,10 @@ def setup_ffmpeg():
         # Adiciona ao PATH para que a pydub possa encontrá-lo
         bin_path = os.path.abspath(os.path.join(ffmpeg_dir, "bin"))
         os.environ["PATH"] += os.pathsep + bin_path
+        print(f"FFmpeg configurado em: {bin_path}")
         return True
     
+    print(f"FFmpeg não encontrado em: {ffmpeg_exe}")
     return False
 
 def check_ffmpeg():

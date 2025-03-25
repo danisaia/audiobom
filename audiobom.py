@@ -307,11 +307,17 @@ class AudioBomGUI:
             self.progress_var.set((idx+1) * 100 / total_files)
             self.root.update_idletasks()
             
-            # Obtém a duração do arquivo
-            duration = self.get_audio_duration(file_path)
+            # Use duração estimada inicialmente para não travar a interface
+            duration = "--:--"  # Carregar posteriormente sob demanda
             
             # Insere o item com cinco colunas: seleção, nome do arquivo, duração, data, play
             self.files_tree.insert("", tk.END, values=("☐", filename, duration, date_str, "▶"))
+            
+            # Atualiza a cada 10 arquivos para manter a interface responsiva
+            if idx % 10 == 0:
+                self.status_var.set(f"Carregando arquivos ({idx+1}/{total_files})...")
+                self.progress_var.set((idx+1) * 100 / total_files)
+                self.root.update_idletasks()
         
         # Adicione evento para detectar clique na coluna play
         self.files_tree.bind("<ButtonRelease-1>", self.handle_click)
