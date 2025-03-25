@@ -23,8 +23,8 @@ def save_config(config_file, input_dir, output_dir):
     }
     
     try:
-        with open(config_file, "w") as f:
-            json.dump(config, f)
+        with open(config_file, "w", encoding="utf-8") as f:
+            json.dump(config, f, ensure_ascii=False, indent=4)
     except Exception as e:
         print(f"Erro ao salvar configurações: {e}")
 
