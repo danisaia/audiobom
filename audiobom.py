@@ -1,560 +1,395 @@
 import os
-import sys
-import platform
-import zipfile
-import shutil
-import urllib.request
+import threading
+import tkinter as tk
+from tkinter import ttk, messagebox
 import warnings
-import numpy as np
-from tqdm import tqdm
+import urllib.request
+from datetime import datetime
 
-# Função para verificar e configurar o FFmpeg antes de importar pydub
-def setup_ffmpeg():
-    """Configura o caminho do FFmpeg no PATH antes de importar pydub"""
-    ffmpeg_dir = "ffmpeg/"
-    
-    # Define o nome do executável com base no sistema operacional
-    if platform.system() == "Windows":
-        ffmpeg_exe = os.path.join(ffmpeg_dir, "bin/ffmpeg.exe")
-    else:
-        ffmpeg_exe = os.path.join(ffmpeg_dir, "bin/ffmpeg")
-    
-    # Verifica se o executável do FFmpeg existe
-    if os.path.exists(ffmpeg_exe):
-        # Adiciona ao PATH para que a pydub possa encontrá-lo
-        bin_path = os.path.abspath(os.path.join(ffmpeg_dir, "bin"))
-        os.environ["PATH"] += os.pathsep + bin_path
-        return True
-    
-    return False
-
-# Configura o FFmpeg antes de importar pydub
-setup_ffmpeg()
-
-# Suprime o aviso específico do pydub sobre FFmpeg
+# Suprime os avisos específicos do pydub sobre FFmpeg
 warnings.filterwarnings("ignore", category=RuntimeWarning, 
                        message="Couldn't find ffmpeg or avconv - defaulting to ffmpeg, but may not work")
 
-# Agora importamos pydub após configurar o ambiente
-from pydub import AudioSegment
-from pydub.effects import normalize, high_pass_filter, low_pass_filter
+# Importa os módulos do pacote src
+from src.ffmpeg_utils import setup_ffmpeg, check_ffmpeg, download_ffmpeg
+from src.file_operations import list_audio_files
+from src.audio_processing import process_audio
+from src.gui_utils import center_window, save_config, load_config, browse_directory, sort_tree_column
 
-import pyloudnorm as pyln
-
-def check_ffmpeg():
-    """Verifica se o FFmpeg está disponível na pasta ffmpeg/"""
-    ffmpeg_dir = "ffmpeg/"
-    
-    # Define o nome do executável com base no sistema operacional
-    if platform.system() == "Windows":
-        ffmpeg_exe = os.path.join(ffmpeg_dir, "bin/ffmpeg.exe")
-    else:
-        ffmpeg_exe = os.path.join(ffmpeg_dir, "bin/ffmpeg")
-    
-    # Verifica se o executável do FFmpeg existe
-    if os.path.exists(ffmpeg_exe):
-        # Já configurado pelo setup_ffmpeg, apenas retorna True
-        return True
-    
-    return False
-
-class DownloadProgressBar(tqdm):
-    def update_to(self, b=1, bsize=1, tsize=None):
-        if tsize is not None:
-            self.total = tsize
-        self.update(b * bsize - self.n)
-
-def download_ffmpeg():
-    """Baixa e instala o FFmpeg na pasta ffmpeg/"""
-    ffmpeg_dir = "ffmpeg/"
-    
-    # Cria o diretório se não existir
-    os.makedirs(ffmpeg_dir, exist_ok=True)
-    
-    # Define a URL de download baseado no sistema operacional
-    system = platform.system()
-    if system == "Windows":
-        ffmpeg_url = "https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-win64-gpl.zip"
-        zip_filename = os.path.join(ffmpeg_dir, "ffmpeg.zip")
-    else:
-        print("Sistema operacional não suportado para download automático do FFmpeg.")
-        print("Por favor, instale o FFmpeg manualmente e coloque na pasta ffmpeg/bin/")
-        return False
-    
-    try:
-        print(f"Baixando FFmpeg de {ffmpeg_url}...")
-        with DownloadProgressBar(unit='B', unit_scale=True, miniters=1, desc="FFmpeg") as t:
-            urllib.request.urlretrieve(ffmpeg_url, zip_filename, reporthook=t.update_to)
+class AudioBomGUI:
+    def __init__(self, root):
+        self.root = root
+        self.root.title("AudioBom 1.0 - Processador de voz para emissoras de rádio")
+        # Aumentando o tamanho inicial da janela para acomodar todos os elementos
+        self.root.geometry("750x730")
+        self.root.minsize(750, 730)  # Define um tamanho mínimo para a janela
+        self.root.resizable(True, True)
         
-        print("Extraindo FFmpeg...")
-        with zipfile.ZipFile(zip_filename, 'r') as zip_ref:
-            zip_ref.extractall(ffmpeg_dir)
+        # Define o caminho do arquivo de configuração
+        self.config_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), "audiobom_config.json")
         
-        # Reorganiza os arquivos (no Windows, os arquivos estão em uma subpasta)
-        if system == "Windows":
-            extracted_dir = None
-            for item in os.listdir(ffmpeg_dir):
-                if os.path.isdir(os.path.join(ffmpeg_dir, item)) and item.startswith("ffmpeg"):
-                    extracted_dir = os.path.join(ffmpeg_dir, item)
-                    break
-            
-            if extracted_dir:
-                # Move o conteúdo para a pasta ffmpeg/
-                for item in os.listdir(extracted_dir):
-                    shutil.move(os.path.join(extracted_dir, item), os.path.join(ffmpeg_dir, item))
-                # Remove a pasta vazia
-                shutil.rmtree(extracted_dir)
+        # Carrega configurações salvas anteriormente
+        input_dir, output_dir = load_config(self.config_file)
+        self.input_dir = tk.StringVar(value=input_dir)
+        self.output_dir = tk.StringVar(value=output_dir)
         
-        # Remove o arquivo zip
-        os.remove(zip_filename)
+        # Ajuste para centralizar a janela na tela
+        center_window(self.root)
         
-        print("FFmpeg baixado e instalado com sucesso!")
-        return check_ffmpeg()
-    
-    except Exception as e:
-        print(f"Erro ao baixar FFmpeg: {e}")
-        return False
-
-def list_audio_files(directory):
-    """Lista todos os arquivos de áudio no diretório especificado"""
-    audio_extensions = ['.mp3', '.wav', '.flac', '.ogg', '.aac', '.m4a']
-    audio_files = []
-    
-    if not os.path.exists(directory):
-        os.makedirs(directory)
-        print(f"Pasta '{directory}' criada.")
-        return []
-    
-    for filename in os.listdir(directory):
-        if any(filename.lower().endswith(ext) for ext in audio_extensions):
-            audio_files.append(filename)
-    
-    return sorted(audio_files)
-
-def filter_band(audio, low_freq, high_freq):
-    """Filtra o áudio para obter apenas a banda de frequência especificada"""
-    # Aplica um filtro passa-alta e depois um passa-baixa para isolar a banda
-    return high_pass_filter(low_pass_filter(audio, high_freq), low_freq)
-
-def audio_eq_boost(audio, low_freq, high_freq, gain_db):
-    """Aplica um boost de EQ em uma banda de frequência específica"""
-    # Isola a banda de frequência desejada
-    filtered = filter_band(audio, low_freq, high_freq)
-    # Aplica ganho à banda isolada
-    boosted = filtered.apply_gain(gain_db)
-    # Combina o áudio original com a banda reforçada
-    return audio.overlay(boosted)
-
-def audio_eq_cut(audio, low_freq, high_freq, cut_db):
-    """Corta uma banda de frequência específica"""
-    # Obtém tudo abaixo da banda (passa-baixa)
-    low_part = low_pass_filter(audio, low_freq)
-    # Obtém tudo acima da banda (passa-alta)
-    high_part = high_pass_filter(audio, high_freq)
-    # Isola a banda que queremos atenuar
-    mid_band = filter_band(audio, low_freq, high_freq)
-    # Aplica a atenuação na banda
-    attenuated_band = mid_band.apply_gain(-cut_db)
-    # Combina as partes
-    result = low_part.overlay(attenuated_band).overlay(high_part)
-    return result
-
-def enhance_speech(audio):
-    """Aprimora o áudio de voz com filtros de frequência e EQ"""
-    # Filtro passa-alta para remover frequências graves desnecessárias
-    audio = high_pass_filter(audio, 80)  # Remove frequências abaixo de 80Hz
-    
-    # Aplica EQ simples para melhorar clareza da voz
-    # Boost nas médias (presença de voz)
-    audio = audio_eq_boost(audio, 1000, 3000, 2)
-    
-    # Pequeno corte nas baixas-médias para reduzir "muddy" sound
-    audio = audio_eq_cut(audio, 200, 400, 1)
-    
-    # Pequeno boost nas altas para brilho
-    audio = audio_eq_boost(audio, 5000, 8000, 1)
-    
-    return audio
-
-def multiband_compression(audio):
-    """Aplica compressão multibanda otimizada para voz"""
-    # Parâmetros para voz - compressão mais agressiva no midrange
-    audio_low = low_pass_filter(audio, 250)
-    audio_mid = filter_band(audio, 250, 5000)
-    audio_high = high_pass_filter(audio, 5000)
-    
-    # Compressão mais leve para graves
-    if audio_low.max_dBFS > -20:
-        reduction = (-20 - audio_low.max_dBFS) * 0.6  # Ratio ~2.5:1
-        audio_low = audio_low.apply_gain(reduction)
-        # Ganho de maquiagem conservador
-        audio_low = audio_low.apply_gain(min(6, abs(reduction) * 0.5))
-    
-    # Compressão mais forte para médias (onde está a voz)
-    if audio_mid.max_dBFS > -18:
-        reduction = (-18 - audio_mid.max_dBFS) * 0.75  # Ratio ~4:1
-        audio_mid = audio_mid.apply_gain(reduction)
-        # Ganho de maquiagem mais agressivo para voz
-        audio_mid = audio_mid.apply_gain(min(8, abs(reduction) * 0.8))
-    
-    # Compressão média para agudos
-    if audio_high.max_dBFS > -22:
-        reduction = (-22 - audio_high.max_dBFS) * 0.7  # Ratio ~3:1
-        audio_high = audio_high.apply_gain(reduction)
-        # Ganho de maquiagem moderado
-        audio_high = audio_high.apply_gain(min(5, abs(reduction) * 0.6))
-    
-    # Recombinam as bandas
-    compressed = audio_low.overlay(audio_mid).overlay(audio_high)
-    
-    return compressed
-
-def deess(audio):
-    """Remove sibilância excessiva do áudio de voz"""
-    # Extrai a banda de frequência de sibilância (aproximadamente 5-9kHz)
-    sibilance_band = filter_band(audio, 5000, 9000)
-    
-    # Aplica compressão forte apenas nas frequências de sibilância
-    threshold = -25
-    if sibilance_band.max_dBFS > threshold:
-        reduction = (sibilance_band.max_dBFS - threshold) * 0.8  # Ratio muito alto ~5:1
-        sibilance_band = sibilance_band.apply_gain(-reduction)
-    
-    # Obtém o áudio original sem a banda de sibilância
-    low_part = low_pass_filter(audio, 5000)
-    high_part = high_pass_filter(audio, 9000)
-    
-    # Combina o áudio sem sibilância com a banda de sibilância comprimida
-    deessed_audio = low_part.overlay(sibilance_band).overlay(high_part)
-    
-    return deessed_audio
-
-def normalize_loudness(audio, target_lufs=-16, silent=False):
-    """Normaliza o loudness para o padrão de broadcast (EBU R128)"""
-    # Converte para numpy array para usar com pyloudnorm
-    samples = np.array(audio.get_array_of_samples()).astype(float) / 32768.0  # Normaliza para float
-    
-    if audio.channels == 2:
-        samples = samples.reshape(-1, 2)
-    else:
-        samples = samples.reshape(-1, 1)
-    
-    # Mede o loudness atual
-    meter = pyln.Meter(audio.frame_rate)  # Cria um medidor
-    current_loudness = meter.integrated_loudness(samples)
-    
-    if not silent:
-        print(f"Loudness atual: {current_loudness:.1f} LUFS")
-    
-    # Calcula e aplica o ganho necessário
-    gain = target_lufs - current_loudness
-    if not silent:
-        print(f"Aplicando ajuste de ganho: {gain:.1f} dB")
-    audio = audio.apply_gain(gain)
-    
-    return audio
-
-def dynamics_processor(audio, silent=False):
-    """Processa a dinâmica da voz para reduzir a variação entre sílabas fortes e fracas"""
-    if not silent:
-        print("Aplicando compressão de dinâmica para voz...")
-    
-    # Análise inicial do áudio para determinar níveis
-    avg_level = audio.dBFS
-    if not silent:
-        print(f"Nível médio do áudio: {avg_level:.1f} dB")
-    
-    # Thresholds para compressão e expansão
-    high_threshold = avg_level + 6  # 6dB acima da média para compressão
-    low_threshold = avg_level - 8   # 8dB abaixo da média para expansão
-    
-    # Parâmetros de processamento
-    compress_ratio = 2.5      # Ratio moderado para compressão (sílabas fortes)
-    expand_ratio = 1.5        # Ratio para expansão (sílabas fracas)
-    segment_length = 50       # ms - tamanho dos segmentos para processamento granular
-    
-    if not silent:
-        print(f"Aplicando processamento com threshold superior: {high_threshold:.1f} dB, threshold inferior: {low_threshold:.1f} dB")
-    
-    # Processamos o áudio em pequenos pedaços para aplicar processamento com mais controle
-    segments = []
-    for i in range(0, len(audio), segment_length):
-        segment = audio[i:i+segment_length]
-        segment_level = segment.dBFS
+        self.setup_ui()
+        self.update_file_list()
         
-        # Pula segmentos muito silenciosos (podem ser pausas naturais)
-        if segment_level < -50:
-            segments.append(segment)
-            continue
+        # Configura o evento de fechamento da janela
+        self.root.protocol("WM_DELETE_WINDOW", self.on_close)
+    
+    def setup_ui(self):
+        # Frame principal com padding adequado
+        main_frame = ttk.Frame(self.root, padding="15")
+        main_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
         
-        # 1. Compressão para sílabas fortes
-        if segment_level > high_threshold:
-            diff = segment_level - high_threshold
-            reduction = diff * (1 - 1/compress_ratio)
-            segment = segment.apply_gain(-reduction)
-            
-            # Aplicamos um pouco de ganho de make-up para manter o volume percebido
-            makeup_gain = min(reduction * 0.5, 3)  # No máximo 3dB de makeup
-            segment = segment.apply_gain(makeup_gain)
+        # Texto informativo
+        info_frame = ttk.Frame(main_frame)
+        info_frame.pack(fill=tk.X, pady=8)
         
-        # 2. Expansão para sílabas fracas (novo!)
-        elif segment_level < low_threshold and segment_level > -40:  # Não processamos partes muito silenciosas
-            diff = low_threshold - segment_level
-            boost = diff * (1 - 1/expand_ratio)
-            boost = min(boost, 6)  # Limitamos o boost a 6dB para evitar artefatos
-            segment = segment.apply_gain(boost)
-        
-        segments.append(segment)
-    
-    # Concatenamos todos os segmentos processados
-    processed_audio = segments[0]
-    for segment in segments[1:]:
-        processed_audio += segment
-    
-    # Normalização suave para manter o volume percebido
-    final_level = processed_audio.dBFS
-    if abs(final_level - avg_level) > 2:
-        # Trazemos o nível médio de volta para perto do nível original
-        makeup_gain = avg_level - final_level
-        # Limitamos o ganho para evitar distorções
-        makeup_gain = max(min(makeup_gain, 4), -4)
-        processed_audio = processed_audio.apply_gain(makeup_gain)
-        if not silent:
-            print(f"Ajuste final de nível: {makeup_gain:.1f} dB")
-    
-    # Estatísticas finais
-    if not silent:
-        print(f"Dinâmica antes: {audio.max_dBFS - audio.dBFS:.1f} dB, depois: {processed_audio.max_dBFS - processed_audio.dBFS:.1f} dB")
-    
-    return processed_audio
-
-def process_audio(audio_path, output_path, show_progress=True, progress_callback=None):
-    """Processa o arquivo de áudio para transmissão em rádio
-    
-    Args:
-        audio_path: Caminho para o arquivo de entrada
-        output_path: Caminho para o arquivo de saída
-        show_progress: Se True, mostra a barra de progresso no terminal
-        progress_callback: Função de callback para atualizar o progresso na GUI
-                          Formato: callback(step, total_steps, description)
-    """
-    import io
-    from contextlib import redirect_stdout
-    
-    print(f"Processando: {os.path.basename(audio_path)}")
-    
-    # Define as etapas do processamento
-    processing_steps = [
-        "Carregando arquivo",
-        "Aplicando configurações básicas",
-        "Processando dinâmica da voz",
-        "Aprimorando voz",
-        "Reduzindo sibilância",
-        "Aplicando compressão multibanda",
-        "Normalizando loudness",
-        "Limitando picos",
-        "Exportando arquivo"
-    ]
-    
-    total_steps = len(processing_steps)
-    
-    # Cria uma única barra de progresso simplificada se solicitado
-    if show_progress:
-        progress_bar = tqdm(
-            total=total_steps, 
-            desc=processing_steps[0],
-            leave=True,
-            position=0,
-            ncols=100,
-            bar_format="{desc:<30} |{bar}| {percentage:3.0f}%"
+        info_text = (
+            "Tratamento simples e completo de áudios de VOZ (offs, sonoras, entrevistas) para serem veiculados em qualidade de rádio FM."
         )
-    else:
-        progress_bar = None
-    
-    # Notifica o callback sobre o início do processamento
-    if progress_callback:
-        progress_callback(0, total_steps, processing_steps[0])
         
-    # Buffer para capturar saídas das funções
-    log_output = io.StringIO()
+        info_label = ttk.Label(info_frame, text=info_text, justify=tk.CENTER, wraplength=750, anchor="center")
+        info_label.pack(fill=tk.X, padx=5, pady=5)
+        
+        # Adiciona um separador após o texto informativo
+        separator = ttk.Separator(main_frame, orient='horizontal')
+        separator.pack(fill=tk.X, pady=8)
+        
+        # Diretório de entrada
+        input_frame = ttk.LabelFrame(main_frame, text="Pasta de áudios brutos", padding="10")
+        input_frame.pack(fill=tk.X, pady=8)
+        
+        ttk.Entry(input_frame, textvariable=self.input_dir).pack(side=tk.LEFT, fill=tk.X, expand=True, padx=5)
+        ttk.Button(input_frame, text="Procurar...", command=self.browse_input_dir).pack(side=tk.RIGHT, padx=5)
+        
+        # Lista de arquivos - altura reduzida para metade
+        files_frame = ttk.LabelFrame(main_frame, text="Arquivos disponíveis", padding="10")
+        files_frame.pack(fill=tk.X, pady=8)  # Mudado de fill=tk.BOTH para fill=tk.X e removido expand=True
+        
+        # Define uma altura fixa para a lista de arquivos (metade do tamanho original)
+        list_container = ttk.Frame(files_frame, height=180)  # Altura fixa de 180 pixels
+        list_container.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
+        list_container.pack_propagate(False)  # Impede que o frame seja redimensionado pelos filhos
+        
+        # Scrollbar para a lista de arquivos
+        scrollbar = ttk.Scrollbar(list_container)
+        scrollbar.pack(side=tk.RIGHT, fill=tk.Y)
+        
+        # Treeview para lista de arquivos com checkbox
+        self.files_tree = ttk.Treeview(
+            list_container, 
+            columns=("select", "filename", "date"),
+            show="headings",
+            yscrollcommand=scrollbar.set
+        )
+        self.files_tree.heading("select", text="✓", command=self.toggle_all)
+        self.files_tree.heading("filename", text="Nome do arquivo", command=lambda: self.sort_column("filename", False))
+        self.files_tree.heading("date", text="Data", command=lambda: self.sort_column("date", False))
+        self.files_tree.column("select", width=40, anchor=tk.CENTER, stretch=False)
+        self.files_tree.column("filename", width=450, anchor=tk.W)
+        self.files_tree.column("date", width=150, anchor=tk.CENTER)
+        self.files_tree.pack(fill=tk.BOTH, expand=True)
+        scrollbar.config(command=self.files_tree.yview)
+        
+        # Armazena o estado atual de ordenação das colunas
+        self.sort_states = {"filename": False, "date": False}
+        
+        # Eventos para a árvore de arquivos
+        self.files_tree.bind("<ButtonRelease-1>", self.toggle_selection)
+        
+        # Diretório de saída
+        output_frame = ttk.LabelFrame(main_frame, text="Pasta de destino", padding="10")
+        output_frame.pack(fill=tk.X, pady=8)
+        
+        ttk.Entry(output_frame, textvariable=self.output_dir).pack(side=tk.LEFT, fill=tk.X, expand=True, padx=5)
+        ttk.Button(output_frame, text="Procurar...", command=self.browse_output_dir).pack(side=tk.RIGHT, padx=5)
+        
+        # Barra de progresso com mais espaço
+        progress_frame = ttk.Frame(main_frame)
+        progress_frame.pack(fill=tk.X, pady=8)
+        
+        self.progress_var = tk.DoubleVar()
+        self.progress = ttk.Progressbar(progress_frame, variable=self.progress_var, maximum=100)
+        self.progress.pack(fill=tk.X)
+        
+        # Status com mais espaço
+        status_frame = ttk.Frame(main_frame)
+        status_frame.pack(fill=tk.X, pady=5)
+        
+        self.status_var = tk.StringVar(value="Pronto")
+        status_label = ttk.Label(status_frame, textvariable=self.status_var, anchor=tk.W)
+        status_label.pack(fill=tk.X)
+        
+        # Botões centralizados e lado a lado
+        buttons_frame = ttk.Frame(main_frame)
+        buttons_frame.pack(fill=tk.X, pady=20)
+        
+        # Frame centralizado para os botões
+        center_frame = ttk.Frame(buttons_frame)
+        center_frame.pack(anchor=tk.CENTER)
+        
+        # Estilo personalizado para destacar o botão Executar
+        style = ttk.Style()
+        style.configure("Accent.TButton", font=("Arial", 10, "bold"))
+        
+        # Botão Executar com destaque
+        execute_btn = ttk.Button(
+            center_frame, 
+            text="Executar", 
+            command=self.process_files, 
+            width=20,
+            style="Accent.TButton"
+        )
+        execute_btn.pack(side=tk.LEFT, padx=10, pady=10)
+        
+        # Botão Fechar ao lado - alterado para chamar on_close
+        close_btn = ttk.Button(
+            center_frame, 
+            text="Fechar", 
+            command=self.on_close, 
+            width=20
+        )
+        close_btn.pack(side=tk.LEFT, padx=10, pady=10)
+        
+        # Adiciona um separador antes do rodapé
+        footer_separator = ttk.Separator(main_frame, orient='horizontal')
+        footer_separator.pack(fill=tk.X, pady=10)
+        
+        # Rodapé com informações sobre o autor
+        footer_frame = ttk.Frame(main_frame)
+        footer_frame.pack(fill=tk.X, pady=5)
+        
+        footer_text = ttk.Label(
+            footer_frame, 
+            text="Aplicativo Python de código aberto. Programado por Daniel Ito Isaia em 2025.",
+            justify=tk.CENTER,
+            foreground="#666666",  # Cor de texto cinza
+            font=("Arial", 8)  # Fonte pequena
+        )
+        footer_text.pack(anchor=tk.CENTER)
     
-    # Carrega o arquivo de áudio
-    try:
-        with redirect_stdout(log_output):
-            audio = AudioSegment.from_file(audio_path)
-        if progress_bar:
-            progress_bar.update(1)
-            progress_bar.set_description_str(f"{processing_steps[1]:<30}")
-        if progress_callback:
-            progress_callback(1, total_steps, processing_steps[1])
-    except Exception as e:
-        print(f"Erro ao carregar o arquivo: {e}")
-        if progress_bar:
-            progress_bar.close()
-        return False
+    def on_close(self):
+        """Método chamado quando o usuário fecha o programa"""
+        save_config(self.config_file, self.input_dir.get(), self.output_dir.get())
+        self.root.destroy()
     
-    # Extrai informações do arquivo original para exibir depois
-    original_info = f"Original: canais={audio.channels}, taxa={audio.frame_rate}Hz, pico={audio.max_dBFS:.2f}dB"
+    def browse_input_dir(self):
+        directory = browse_directory(self.input_dir.get())
+        if directory != self.input_dir.get():
+            self.input_dir.set(directory)
+            self.update_file_list()
+            save_config(self.config_file, self.input_dir.get(), self.output_dir.get())
     
-    # 1. Converte para estéreo se estiver em mono
-    with redirect_stdout(log_output):
-        if audio.channels == 1:
-            audio = audio.set_channels(2)
+    def browse_output_dir(self):
+        directory = browse_directory(self.output_dir.get())
+        if directory != self.output_dir.get():
+            self.output_dir.set(directory)
+            save_config(self.config_file, self.input_dir.get(), self.output_dir.get())
     
-        # 2. Define taxa de amostragem para 44100 Hz
-        if audio.frame_rate != 44100:
-            audio = audio.set_frame_rate(44100)
+    def update_file_list(self):
+        # Limpa a árvore atual
+        for item in self.files_tree.get_children():
+            self.files_tree.delete(item)
+        
+        # Lista arquivos de áudio no diretório
+        audio_files = list_audio_files(self.input_dir.get())
+        
+        for filename in audio_files:
+            # Obtém a data de modificação do arquivo
+            file_path = os.path.join(self.input_dir.get(), filename)
+            mod_time = os.path.getmtime(file_path)
+            date_str = datetime.fromtimestamp(mod_time).strftime("%d/%m/%Y %H:%M")
+            
+            # Insere o item com três colunas: seleção, nome do arquivo, data
+            self.files_tree.insert("", tk.END, values=("☐", filename, date_str))
     
-    if progress_bar:
-        progress_bar.update(1)
-        progress_bar.set_description_str(f"{processing_steps[2]:<30}")
-    if progress_callback:
-        progress_callback(2, total_steps, processing_steps[2])
+    def toggle_selection(self, event):
+        region = self.files_tree.identify_region(event.x, event.y)
+        if region == "cell":
+            column = self.files_tree.identify_column(event.x)
+            if column == "#1":  # Coluna de seleção
+                item = self.files_tree.identify_row(event.y)
+                if not item:
+                    return
+                    
+                current_values = self.files_tree.item(item, "values")
+                
+                # Alterna entre marcado e desmarcado
+                if current_values[0] == "☐":
+                    self.files_tree.item(item, values=("☑", current_values[1], current_values[2]))
+                else:
+                    self.files_tree.item(item, values=("☐", current_values[1], current_values[2]))
     
-    # 3. Processamento de dinâmica
-    with redirect_stdout(log_output):
-        audio = dynamics_processor(audio, silent=False)
-    if progress_bar:
-        progress_bar.update(1)
-        progress_bar.set_description_str(f"{processing_steps[3]:<30}")
-    if progress_callback:
-        progress_callback(3, total_steps, processing_steps[3])
-    
-    # 4. Processamento de voz
-    with redirect_stdout(log_output):
-        audio = enhance_speech(audio)
-    if progress_bar:
-        progress_bar.update(1)
-        progress_bar.set_description_str(f"{processing_steps[4]:<30}")
-    if progress_callback:
-        progress_callback(4, total_steps, processing_steps[4])
-    
-    # 5. De-essing
-    with redirect_stdout(log_output):
-        audio = deess(audio)
-    if progress_bar:
-        progress_bar.update(1)
-        progress_bar.set_description_str(f"{processing_steps[5]:<30}")
-    if progress_callback:
-        progress_callback(5, total_steps, processing_steps[5])
-    
-    # 6. Compressão multibanda
-    with redirect_stdout(log_output):
-        audio = multiband_compression(audio)
-    if progress_bar:
-        progress_bar.update(1)
-        progress_bar.set_description_str(f"{processing_steps[6]:<30}")
-    if progress_callback:
-        progress_callback(6, total_steps, processing_steps[6])
-    
-    # 7. Normalização de loudness
-    with redirect_stdout(log_output):
-        audio = normalize_loudness(audio, target_lufs=-16, silent=False)
-    if progress_bar:
-        progress_bar.update(1)
-        progress_bar.set_description_str(f"{processing_steps[7]:<30}")
-    if progress_callback:
-        progress_callback(7, total_steps, processing_steps[7])
-    
-    # 8. Limitador de pico
-    peak_info = ""
-    with redirect_stdout(log_output):
-        if audio.max_dBFS > -6.0:
-            reduction = -6.0 - audio.max_dBFS
-            audio = audio.apply_gain(reduction)
-            peak_info = f"Picos limitados a -6 dB (redução de {-reduction:.1f} dB)"
-    
-    if progress_bar:
-        progress_bar.update(1)
-        progress_bar.set_description_str(f"{processing_steps[8]:<30}")
-    if progress_callback:
-        progress_callback(8, total_steps, processing_steps[8])
-    
-    # Informações do arquivo processado
-    processed_info = f"Processado: canais={audio.channels}, taxa={audio.frame_rate}Hz, pico={audio.max_dBFS:.2f}dB"
-    
-    # 9. Exportação
-    with redirect_stdout(log_output):
-        os.makedirs(os.path.dirname(output_path), exist_ok=True)
-        audio.export(output_path, format="mp3", bitrate="192k",
-                    tags={"title": os.path.basename(output_path), 
-                         "artist": "Audio Processor"},
-                    parameters=["-q:a", "0"])
-    
-    if progress_bar:
-        progress_bar.update(1)
-        progress_bar.close()
-    if progress_callback:
-        progress_callback(9, total_steps, "Concluído")
-    
-    # Exibir informações relevantes após o processamento
-    print(original_info)
-    if peak_info:
-        print(peak_info)
-    print(processed_info)
-    
-    return True
-
-def main():
-    # Verifica se o FFmpeg está disponível
-    if not check_ffmpeg():
-        print("FFmpeg não encontrado. Tentando baixar automaticamente...")
-        if not download_ffmpeg():
-            print("Não foi possível baixar o FFmpeg. Por favor, instale-o manualmente.")
-            print("Coloque-o na pasta 'ffmpeg/bin/' e execute o script novamente.")
+    def toggle_all(self):
+        """Seleciona ou desmarca todos os arquivos"""
+        # Verifica se todos os itens estão marcados
+        items = self.files_tree.get_children()
+        if not items:
             return
+            
+        # Verifica se todos os itens estão marcados
+        all_checked = True
+        for item in items:
+            values = self.files_tree.item(item, "values")
+            if values[0] != "☑":
+                all_checked = False
+                break
+        
+        # Inverte o estado de todos os itens
+        new_state = "☐" if all_checked else "☑"
+        for item in items:
+            values = self.files_tree.item(item, "values")
+            self.files_tree.item(item, values=(new_state, values[1], values[2]))
     
-    input_dir = "brutos/"
-    output_dir = "tratados/"
+    def sort_column(self, column, reverse):
+        """Ordena a coluna clicada em ordem crescente ou decrescente"""
+        sort_tree_column(self.files_tree, column, self.sort_states)
     
-    # Cria os diretórios se não existirem
-    os.makedirs(input_dir, exist_ok=True)
-    os.makedirs(output_dir, exist_ok=True)
+    def process_files(self):
+        selected_files = []
+        for item in self.files_tree.get_children():
+            values = self.files_tree.item(item, "values")
+            if values[0] == "☑":
+                selected_files.append(values[1])
+        
+        if not selected_files:
+            messagebox.showinfo("Seleção", "Por favor, selecione pelo menos um arquivo para processar.")
+            return
+        
+        # Inicia o processamento em uma thread separada para não congelar a interface
+        threading.Thread(target=self._process_files_thread, args=(selected_files,), daemon=True).start()
     
-    # Lista os arquivos de áudio
-    audio_files = list_audio_files(input_dir)
+    def progress_callback(self, step, total_steps, description=""):
+        """Atualiza a barra de progresso da GUI com o progresso interno do processamento"""
+        # Calcula a porcentagem para uma única etapa de arquivo (normalizada para o intervalo do arquivo atual)
+        if total_steps > 0:
+            # Obtém o progresso atual e total de arquivos da variável de instância
+            current_file_idx = getattr(self, 'current_file_idx', 0)
+            total_files = getattr(self, 'total_files', 1)
+            
+            # Calcula a porcentagem de um único arquivo do total
+            single_file_percent = 100 / total_files
+            
+            # Calcula a porcentagem da etapa atual dentro do arquivo atual
+            step_percent = (step / total_steps) * single_file_percent
+            
+            # Calcula a porcentagem total (arquivos anteriores + progresso atual)
+            total_percent = (current_file_idx * single_file_percent) + step_percent
+            
+            # Atualiza a barra de progresso
+            self.progress_var.set(total_percent)
+            
+            # Atualiza o status se uma descrição for fornecida
+            if description:
+                self.status_var.set(f"Processando {current_file_idx+1}/{total_files}: {description}")
+            
+            # Força atualização da interface
+            self.root.update_idletasks()
     
-    if not audio_files:
-        print(f"Nenhum arquivo de áudio encontrado em '{input_dir}'")
-        print("Por favor, adicione alguns arquivos de áudio e execute o script novamente.")
-        return
-    
-    # Mostra os arquivos para o usuário
-    print("\n=== PROCESSADOR DE ÁUDIO PARA RÁDIO ===")
-    print(f"\nEncontrados {len(audio_files)} arquivos de áudio em '{input_dir}':")
-    for idx, filename in enumerate(audio_files, 1):
-        print(f"{idx}. {filename}")
-    
-    # Obtém a seleção do usuário
-    while True:
-        try:
-            selection = int(input("\nDigite o número do arquivo a processar (0 para sair): "))
-            if selection == 0:
-                print("Saindo do programa.")
-                return
-            if selection < 1 or selection > len(audio_files):
-                print(f"Por favor, digite um número entre 1 e {len(audio_files)}.")
-                continue
-            break
-        except ValueError:
-            print("Por favor, digite um número válido.")
-    
-    selected_file = audio_files[selection - 1]
-    input_path = os.path.join(input_dir, selected_file)
-    
-    # Obtém o nome do arquivo de saída (mesmo nome, mas em outro diretório)
-    filename_base = os.path.splitext(selected_file)[0]
-    output_path = os.path.join(output_dir, f"{filename_base}.mp3")
-    
-    # Processa o áudio
-    print(f"\nProcessando '{selected_file}'...")
-    success = process_audio(input_path, output_path)
-    
-    if success:
-        print("\nProcessamento concluído com sucesso!")
-        print(f"Arquivo salvo em: {output_path}")
-    else:
-        print("\nProcessamento falhou.")
+    def _process_files_thread(self, selected_files):
+        self.status_var.set("Verificando FFmpeg...")
+        self.root.update_idletasks()
+        
+        # Verificação do FFmpeg foi movida para o início do programa
+        # Aqui apenas continuamos o processamento normal dos arquivos
+        
+        # Armazena o número total de arquivos para cálculo de progresso
+        self.total_files = len(selected_files)
+        
+        for i, filename in enumerate(selected_files):
+            try:
+                # Armazena o índice do arquivo atual para o callback de progresso
+                self.current_file_idx = i
+                
+                # Atualiza status
+                self.status_var.set(f"Processando {i+1}/{self.total_files}: {filename}")
+                self.root.update_idletasks()
+                
+                # Caminhos completos
+                input_path = os.path.join(self.input_dir.get(), filename)
+                output_path = os.path.join(self.output_dir.get(), os.path.splitext(filename)[0] + ".mp3")
+                
+                # Processa o arquivo passando o callback de progresso
+                process_audio(input_path, output_path, show_progress=False, 
+                              progress_callback=self.progress_callback)
+                
+            except Exception as e:
+                self.status_var.set(f"Erro ao processar {filename}: {str(e)}")
+                self.root.update_idletasks()
+        
+        # Finaliza
+        self.progress_var.set(100)
+        self.status_var.set(f"Concluído! {self.total_files} arquivos processados.")
+        messagebox.showinfo("Concluído", f"Processamento concluído com sucesso!\n{self.total_files} arquivos processados.")
 
 if __name__ == "__main__":
-    main()
+    # Assegura que o diretório de trabalho seja o diretório do script
+    os.chdir(os.path.dirname(os.path.abspath(__file__)))
+    
+    # Configura FFmpeg antes de qualquer outra importação que possa usar pydub
+    setup_ffmpeg()
+    
+    # Verifica dependências
+    try:
+        import numpy
+        import pydub
+        import pyloudnorm
+        import tqdm
+    except ImportError as e:
+        messagebox.showerror("Erro de dependência", 
+                           f"Biblioteca necessária não encontrada: {str(e)}\n"
+                           "Execute 'pip install numpy pydub pyloudnorm tqdm' para instalar as dependências.")
+        exit(1)
+    
+    # Inicia a GUI apenas para exibir diálogos iniciais
+    root = tk.Tk()
+    root.withdraw()  # Esconde a janela principal temporariamente
+    
+    # Verifica se o FFmpeg está disponível
+    if not check_ffmpeg():
+        # Obter informações sobre o tamanho do download
+        ffmpeg_url = "https://github.com/BtbN/FFmpeg-Builds/releases/download/latest/ffmpeg-master-latest-win64-gpl.zip"
+        try:
+            site = urllib.request.urlopen(ffmpeg_url)
+            size = site.info().get('Content-Length')
+            size_str = f"{int(size) / (1024*1024):.1f} MB" if size else "desconhecido"
+        except:
+            size_str = "desconhecido"
+        
+        message = (f"O FFmpeg não foi encontrado. Este componente é necessário para o processamento de áudio.\n\n"
+                  f"Deseja fazer o download agora? (Tamanho estimado: {size_str})")
+                 
+        download = messagebox.askyesno("FFmpeg não encontrado", message)
+        
+        if download:
+            # Informar ao usuário que o download está em andamento
+            messagebox.showinfo("Download em andamento", 
+                              "O FFmpeg será baixado agora. Uma janela de terminal mostrará "
+                              "o progresso. Por favor, aguarde até que o download seja concluído.")
+            
+            # Fazer o download
+            downloaded = download_ffmpeg()
+            
+            if not downloaded:
+                messagebox.showerror("Erro", "Não foi possível baixar o FFmpeg. Por favor, instale-o manualmente.")
+                root.destroy()
+                exit(0)
+            
+            messagebox.showinfo("Download Concluído", "O FFmpeg foi baixado e instalado com sucesso!")
+        else:
+            # Usuário optou por não fazer o download
+            messagebox.showinfo("Programa Encerrado", "O programa será encerrado, pois o FFmpeg é necessário para o processamento de áudio.")
+            root.destroy()
+            exit(0)
+    
+    # Mostra a janela principal e inicia a GUI
+    root.deiconify()  # Torna a janela principal visível novamente
+    app = AudioBomGUI(root)
+    root.mainloop()
