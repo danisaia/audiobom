@@ -515,11 +515,22 @@ class AudioBomGUI:
             self.root.update_idletasks()
     
     def _process_files_thread(self, selected_files):
+        import traceback
+        from src.file_operations import setup_logging
+        
+        logger = setup_logging()
+        logger.info(f"Iniciando processamento de {len(selected_files)} arquivos")
+        
         self.status_var.set("Verificando FFmpeg...")
         self.root.update_idletasks()
         
-        # Verificação do FFmpeg foi movida para o início do programa
-        # Aqui apenas continuamos o processamento normal dos arquivos
+        # Verificação adicional do FFmpeg
+        from src.ffmpeg_utils import setup_ffmpeg
+        if not setup_ffmpeg():
+            self.status_var.set("ERRO: FFmpeg não encontrado!")
+            logger.error("FFmpeg não encontrado. Processamento cancelado.")
+            messagebox.showerror("Erro", "FFmpeg não encontrado. Verifique a instalação.")
+            return
         
         # Armazena o número total de arquivos para cálculo de progresso
         self.total_files = len(selected_files)
@@ -537,12 +548,19 @@ class AudioBomGUI:
                 input_path = os.path.join(self.input_dir.get(), filename)
                 output_path = os.path.join(self.output_dir.get(), os.path.splitext(filename)[0] + ".mp3")
                 
+                logger.info(f"Processando arquivo: {input_path} -> {output_path}")
+                
                 # Processa o arquivo passando o callback de progresso
                 process_audio(input_path, output_path, show_progress=False, 
                               progress_callback=self.progress_callback)
                 
+                logger.info(f"Arquivo processado com sucesso: {filename}")
+                
             except Exception as e:
-                self.status_var.set(f"Erro ao processar {filename}: {str(e)}")
+                err_msg = f"Erro ao processar {filename}: {str(e)}"
+                logger.error(err_msg)
+                logger.error(traceback.format_exc())
+                self.status_var.set(err_msg)
                 self.root.update_idletasks()
         
         # Finaliza

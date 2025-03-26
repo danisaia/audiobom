@@ -33,10 +33,14 @@ else:
 a = Analysis(
     ['audiobom.py'],
     pathex=[],
-    binaries=[],
+    binaries=[
+        # Adiciona explicitamente os binários do FFmpeg
+        ('ffmpeg/bin/ffmpeg.exe', 'ffmpeg/bin'),
+        ('ffmpeg/bin/ffprobe.exe', 'ffmpeg/bin'),
+        ('ffmpeg/bin/ffplay.exe', 'ffmpeg/bin'),
+    ],
     datas=[
         ('src', 'src'),  # Inclui todo o pacote src
-        ('ffmpeg/bin/*.exe', 'ffmpeg/bin'),  # Executáveis do FFmpeg
         ('ffmpeg/LICENSE.txt', 'ffmpeg'),  # Licença do FFmpeg
         # Garantimos que essas pastas existam e sejam incluídas
         ('brutos/.gitkeep', 'brutos'), 

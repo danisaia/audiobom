@@ -17,23 +17,32 @@ def setup_ffmpeg():
     """Configura o caminho do FFmpeg no PATH antes de importar pydub"""
     # Detecta se está rodando a partir do executável do PyInstaller
     if getattr(sys, 'frozen', False):
-        application_path = os.path.dirname(sys.executable)
-        ffmpeg_dir = os.path.join(application_path, "ffmpeg")
+        if hasattr(sys, '_MEIPASS'):
+            base_path = sys._MEIPASS
+        else:
+            base_path = os.path.dirname(sys.executable)
+        ffmpeg_dir = os.path.join(base_path, "ffmpeg")
     else:
         ffmpeg_dir = "ffmpeg/"
     
     # Define o nome do executável com base no sistema operacional
     if platform.system() == "Windows":
-        ffmpeg_exe = os.path.join(ffmpeg_dir, "bin/ffmpeg.exe")
+        ffmpeg_exe = os.path.join(ffmpeg_dir, "bin", "ffmpeg.exe")
+        ffprobe_exe = os.path.join(ffmpeg_dir, "bin", "ffprobe.exe")
     else:
-        ffmpeg_exe = os.path.join(ffmpeg_dir, "bin/ffmpeg")
+        ffmpeg_exe = os.path.join(ffmpeg_dir, "bin", "ffmpeg")
+        ffprobe_exe = os.path.join(ffmpeg_dir, "bin", "ffprobe")
     
     # Verifica se o executável do FFmpeg existe
-    if os.path.exists(ffmpeg_exe):
+    if os.path.exists(ffmpeg_exe) and os.path.exists(ffprobe_exe):
         # Adiciona ao PATH para que a pydub possa encontrá-lo
         bin_path = os.path.abspath(os.path.join(ffmpeg_dir, "bin"))
-        os.environ["PATH"] += os.pathsep + bin_path
+        os.environ["PATH"] = bin_path + os.pathsep + os.environ["PATH"]
         print(f"FFmpeg configurado em: {bin_path}")
+        
+        # Configura a variável FFMPEG_BINARY para o pydub
+        os.environ["FFMPEG_BINARY"] = ffmpeg_exe
+        os.environ["FFPROBE_BINARY"] = ffprobe_exe
         return True
     
     print(f"FFmpeg não encontrado em: {ffmpeg_exe}")
