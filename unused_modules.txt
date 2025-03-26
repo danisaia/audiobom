@@ -1,0 +1,484 @@
+Análise de importações para audiobom.py
+
+
+
+==================================================
+NUMPY SUBMÓDULOS
+==================================================
+
+Pacote base 'numpy' é importado: True
+
+Submódulos disponíveis:
+  numpy.__config__ (módulo): não usado
+  numpy._array_api_info (módulo): não usado
+  numpy._configtool (módulo): não usado
+  numpy._core (pacote): não usado
+  numpy._distributor_init (módulo): não usado
+  numpy._expired_attrs_2_0 (módulo): não usado
+  numpy._globals (módulo): não usado
+  numpy._pyinstaller (pacote): não usado
+  numpy._pytesttester (módulo): não usado
+  numpy._typing (pacote): não usado
+  numpy._utils (pacote): não usado
+  numpy.char (pacote): não usado
+  numpy.compat (pacote): não usado
+  numpy.conftest (módulo): não usado
+  numpy.core (pacote): não usado
+  numpy.ctypeslib (módulo): não usado
+  numpy.dtypes (módulo): não usado
+  numpy.exceptions (módulo): não usado
+  numpy.f2py (pacote): não usado
+  numpy.fft (pacote): não usado
+  numpy.lib (pacote): não usado
+  numpy.linalg (pacote): não usado
+  numpy.ma (pacote): não usado
+  numpy.matlib (módulo): não usado
+  numpy.matrixlib (pacote): não usado
+  numpy.polynomial (pacote): não usado
+  numpy.random (pacote): não usado
+  numpy.rec (pacote): não usado
+  numpy.strings (pacote): não usado
+  numpy.testing (pacote): não usado
+  numpy.tests (pacote): não usado
+  numpy.typing (pacote): não usado
+  numpy.version (módulo): não usado
+
+Submódulos potencialmente não utilizados (excluir de PyInstaller):
+  numpy.__config__
+  numpy._array_api_info
+  numpy._configtool
+  numpy._core
+  numpy._distributor_init
+  numpy._expired_attrs_2_0
+  numpy._globals
+  numpy._pyinstaller
+  numpy._pytesttester
+  numpy._typing
+  numpy._utils
+  numpy.char
+  numpy.compat
+  numpy.conftest
+  numpy.core
+  numpy.ctypeslib
+  numpy.dtypes
+  numpy.exceptions
+  numpy.f2py
+  numpy.fft
+  numpy.lib
+  numpy.linalg
+  numpy.ma
+  numpy.matlib
+  numpy.matrixlib
+  numpy.polynomial
+  numpy.random
+  numpy.rec
+  numpy.strings
+  numpy.testing
+  numpy.tests
+  numpy.typing
+  numpy.version
+
+
+==================================================
+SCIPY SUBMÓDULOS
+==================================================
+
+Pacote base 'scipy' é importado: False
+
+Submódulos disponíveis:
+  scipy.__config__ (módulo): não usado
+  scipy._distributor_init (módulo): não usado
+  scipy._lib (pacote): não usado
+  scipy.cluster (pacote): não usado
+  scipy.conftest (módulo): não usado
+  scipy.constants (pacote): não usado
+  scipy.datasets (pacote): não usado
+  scipy.differentiate (pacote): não usado
+  scipy.fft (pacote): não usado
+  scipy.fftpack (pacote): não usado
+  scipy.integrate (pacote): não usado
+  scipy.interpolate (pacote): não usado
+  scipy.io (pacote): não usado
+  scipy.linalg (pacote): não usado
+  scipy.misc (pacote): não usado
+  scipy.ndimage (pacote): não usado
+  scipy.odr (pacote): não usado
+  scipy.optimize (pacote): não usado
+  scipy.signal (pacote): não usado
+  scipy.sparse (pacote): não usado
+  scipy.spatial (pacote): não usado
+  scipy.special (pacote): não usado
+  scipy.stats (pacote): não usado
+  scipy.version (módulo): não usado
+
+Submódulos potencialmente não utilizados (excluir de PyInstaller):
+  scipy.__config__
+  scipy._distributor_init
+  scipy._lib
+  scipy.cluster
+  scipy.conftest
+  scipy.constants
+  scipy.datasets
+  scipy.differentiate
+  scipy.fft
+  scipy.fftpack
+  scipy.integrate
+  scipy.interpolate
+  scipy.io
+  scipy.linalg
+  scipy.misc
+  scipy.ndimage
+  scipy.odr
+  scipy.optimize
+  scipy.signal
+  scipy.sparse
+  scipy.spatial
+  scipy.special
+  scipy.stats
+  scipy.version
+
+
+==================================================
+PYGAME SUBMÓDULOS
+==================================================
+
+Pacote base 'pygame' é importado: True
+
+Submódulos disponíveis:
+  pygame.__pyinstaller (pacote): não usado
+  pygame._camera (módulo): não usado
+  pygame._camera_opencv (módulo): não usado
+  pygame._camera_vidcapture (módulo): não usado
+  pygame._freetype (módulo): não usado
+  pygame._sdl2 (pacote): não usado
+  pygame._sprite (módulo): não usado
+  pygame.base (módulo): não usado
+  pygame.bufferproxy (módulo): não usado
+  pygame.camera (módulo): não usado
+  pygame.color (módulo): não usado
+  pygame.colordict (módulo): não usado
+  pygame.constants (módulo): não usado
+  pygame.cursors (módulo): não usado
+  pygame.display (módulo): não usado
+  pygame.draw (módulo): não usado
+  pygame.draw_py (módulo): não usado
+  pygame.event (módulo): não usado
+  pygame.examples (pacote): não usado
+  pygame.fastevent (módulo): não usado
+  pygame.font (módulo): não usado
+  pygame.freetype (módulo): não usado
+  pygame.ftfont (módulo): não usado
+  pygame.gfxdraw (módulo): não usado
+  pygame.image (módulo): não usado
+  pygame.imageext (módulo): não usado
+  pygame.joystick (módulo): não usado
+  pygame.key (módulo): não usado
+  pygame.locals (módulo): não usado
+  pygame.macosx (módulo): não usado
+  pygame.mask (módulo): não usado
+  pygame.math (módulo): não usado
+  pygame.midi (módulo): não usado
+  pygame.mixer (módulo): USADO
+  pygame.mixer_music (módulo): não usado
+  pygame.mouse (módulo): não usado
+  pygame.newbuffer (módulo): não usado
+  pygame.pixelarray (módulo): não usado
+  pygame.pixelcopy (módulo): não usado
+  pygame.pkgdata (módulo): não usado
+  pygame.pypm (módulo): não usado
+  pygame.rect (módulo): não usado
+  pygame.rwobject (módulo): não usado
+  pygame.scrap (módulo): não usado
+  pygame.sndarray (módulo): não usado
+  pygame.sprite (módulo): não usado
+  pygame.surface (módulo): não usado
+  pygame.surfarray (módulo): não usado
+  pygame.surflock (módulo): não usado
+  pygame.sysfont (módulo): não usado
+  pygame.tests (pacote): não usado
+  pygame.threads (pacote): não usado
+  pygame.time (módulo): não usado
+  pygame.transform (módulo): não usado
+  pygame.version (módulo): não usado
+
+Submódulos potencialmente não utilizados (excluir de PyInstaller):
+  pygame.__pyinstaller
+  pygame._camera
+  pygame._camera_opencv
+  pygame._camera_vidcapture
+  pygame._freetype
+  pygame._sdl2
+  pygame._sprite
+  pygame.base
+  pygame.bufferproxy
+  pygame.camera
+  pygame.color
+  pygame.colordict
+  pygame.constants
+  pygame.cursors
+  pygame.display
+  pygame.draw
+  pygame.draw_py
+  pygame.event
+  pygame.examples
+  pygame.fastevent
+  pygame.font
+  pygame.freetype
+  pygame.ftfont
+  pygame.gfxdraw
+  pygame.image
+  pygame.imageext
+  pygame.joystick
+  pygame.key
+  pygame.locals
+  pygame.macosx
+  pygame.mask
+  pygame.math
+  pygame.midi
+  pygame.mixer_music
+  pygame.mouse
+  pygame.newbuffer
+  pygame.pixelarray
+  pygame.pixelcopy
+  pygame.pkgdata
+  pygame.pypm
+  pygame.rect
+  pygame.rwobject
+  pygame.scrap
+  pygame.sndarray
+  pygame.sprite
+  pygame.surface
+  pygame.surfarray
+  pygame.surflock
+  pygame.sysfont
+  pygame.tests
+  pygame.threads
+  pygame.time
+  pygame.transform
+  pygame.version
+
+
+==================================================
+MULTIPROCESSING SUBMÓDULOS
+==================================================
+
+Pacote base 'multiprocessing' é importado: False
+
+Submódulos disponíveis:
+  multiprocessing.connection (módulo): não usado
+  multiprocessing.context (módulo): não usado
+  multiprocessing.dummy (pacote): não usado
+  multiprocessing.forkserver (módulo): não usado
+  multiprocessing.heap (módulo): não usado
+  multiprocessing.managers (módulo): não usado
+  multiprocessing.pool (módulo): não usado
+  multiprocessing.popen_fork (módulo): não usado
+  multiprocessing.popen_forkserver (módulo): não usado
+  multiprocessing.popen_spawn_posix (módulo): não usado
+  multiprocessing.popen_spawn_win32 (módulo): não usado
+  multiprocessing.process (módulo): não usado
+  multiprocessing.queues (módulo): não usado
+  multiprocessing.reduction (módulo): não usado
+  multiprocessing.resource_sharer (módulo): não usado
+  multiprocessing.resource_tracker (módulo): não usado
+  multiprocessing.shared_memory (módulo): não usado
+  multiprocessing.sharedctypes (módulo): não usado
+  multiprocessing.spawn (módulo): não usado
+  multiprocessing.synchronize (módulo): não usado
+  multiprocessing.util (módulo): não usado
+
+Submódulos potencialmente não utilizados (excluir de PyInstaller):
+  multiprocessing.connection
+  multiprocessing.context
+  multiprocessing.dummy
+  multiprocessing.forkserver
+  multiprocessing.heap
+  multiprocessing.managers
+  multiprocessing.pool
+  multiprocessing.popen_fork
+  multiprocessing.popen_forkserver
+  multiprocessing.popen_spawn_posix
+  multiprocessing.popen_spawn_win32
+  multiprocessing.process
+  multiprocessing.queues
+  multiprocessing.reduction
+  multiprocessing.resource_sharer
+  multiprocessing.resource_tracker
+  multiprocessing.shared_memory
+  multiprocessing.sharedctypes
+  multiprocessing.spawn
+  multiprocessing.synchronize
+  multiprocessing.util
+
+
+==================================================
+SETUPTOOLS SUBMÓDULOS
+==================================================
+
+Pacote base 'setuptools' é importado: False
+
+Submódulos disponíveis:
+  setuptools._core_metadata (módulo): não usado
+  setuptools._distutils (pacote): não usado
+  setuptools._entry_points (módulo): não usado
+  setuptools._imp (módulo): não usado
+  setuptools._importlib (módulo): não usado
+  setuptools._itertools (módulo): não usado
+  setuptools._normalization (módulo): não usado
+  setuptools._path (módulo): não usado
+  setuptools._reqs (módulo): não usado
+  setuptools._shutil (módulo): não usado
+  setuptools._static (módulo): não usado
+  setuptools.archive_util (módulo): não usado
+  setuptools.build_meta (módulo): não usado
+  setuptools.command (pacote): não usado
+  setuptools.compat (pacote): não usado
+  setuptools.config (pacote): não usado
+  setuptools.depends (módulo): não usado
+  setuptools.discovery (módulo): não usado
+  setuptools.dist (módulo): não usado
+  setuptools.errors (módulo): não usado
+  setuptools.extension (módulo): não usado
+  setuptools.glob (módulo): não usado
+  setuptools.installer (módulo): não usado
+  setuptools.launch (módulo): não usado
+  setuptools.logging (módulo): não usado
+  setuptools.modified (módulo): não usado
+  setuptools.monkey (módulo): não usado
+  setuptools.msvc (módulo): não usado
+  setuptools.namespaces (módulo): não usado
+  setuptools.package_index (módulo): não usado
+  setuptools.sandbox (módulo): não usado
+  setuptools.tests (pacote): não usado
+  setuptools.unicode_utils (módulo): não usado
+  setuptools.version (módulo): não usado
+  setuptools.warnings (módulo): não usado
+  setuptools.wheel (módulo): não usado
+  setuptools.windows_support (módulo): não usado
+
+Submódulos potencialmente não utilizados (excluir de PyInstaller):
+  setuptools._core_metadata
+  setuptools._distutils
+  setuptools._entry_points
+  setuptools._imp
+  setuptools._importlib
+  setuptools._itertools
+  setuptools._normalization
+  setuptools._path
+  setuptools._reqs
+  setuptools._shutil
+  setuptools._static
+  setuptools.archive_util
+  setuptools.build_meta
+  setuptools.command
+  setuptools.compat
+  setuptools.config
+  setuptools.depends
+  setuptools.discovery
+  setuptools.dist
+  setuptools.errors
+  setuptools.extension
+  setuptools.glob
+  setuptools.installer
+  setuptools.launch
+  setuptools.logging
+  setuptools.modified
+  setuptools.monkey
+  setuptools.msvc
+  setuptools.namespaces
+  setuptools.package_index
+  setuptools.sandbox
+  setuptools.tests
+  setuptools.unicode_utils
+  setuptools.version
+  setuptools.warnings
+  setuptools.wheel
+  setuptools.windows_support
+
+
+==================================================
+FUTURE SUBMÓDULOS
+==================================================
+
+Pacote base 'future' é importado: False
+
+Submódulos disponíveis:
+  future.backports (pacote): não usado
+  future.builtins (pacote): não usado
+  future.moves (pacote): não usado
+  future.standard_library (pacote): não usado
+  future.tests (pacote): não usado
+  future.types (pacote): não usado
+  future.utils (pacote): não usado
+
+Submódulos potencialmente não utilizados (excluir de PyInstaller):
+  future.backports
+  future.builtins
+  future.moves
+  future.standard_library
+  future.tests
+  future.types
+  future.utils
+
+
+==================================================
+PYLOUDNORM SUBMÓDULOS
+==================================================
+
+Pacote base 'pyloudnorm' é importado: True
+
+Submódulos disponíveis:
+  pyloudnorm.iirfilter (módulo): não usado
+  pyloudnorm.meter (módulo): não usado
+  pyloudnorm.normalize (módulo): não usado
+  pyloudnorm.util (módulo): não usado
+
+Submódulos potencialmente não utilizados (excluir de PyInstaller):
+  pyloudnorm.iirfilter
+  pyloudnorm.meter
+  pyloudnorm.normalize
+  pyloudnorm.util
+
+
+==================================================
+PYDUB SUBMÓDULOS
+==================================================
+
+Pacote base 'pydub' é importado: True
+
+Submódulos disponíveis:
+  pydub.audio_segment (módulo): não usado
+  pydub.effects (módulo): não usado
+  pydub.exceptions (módulo): não usado
+  pydub.generators (módulo): não usado
+  pydub.logging_utils (módulo): não usado
+  pydub.playback (módulo): não usado
+  pydub.pyaudioop (módulo): não usado
+  pydub.scipy_effects (módulo): não usado
+  pydub.silence (módulo): não usado
+  pydub.utils (módulo): não usado
+
+Submódulos potencialmente não utilizados (excluir de PyInstaller):
+  pydub.audio_segment
+  pydub.effects
+  pydub.exceptions
+  pydub.generators
+  pydub.logging_utils
+  pydub.playback
+  pydub.pyaudioop
+  pydub.scipy_effects
+  pydub.silence
+  pydub.utils
+
+
+{'='*50}
+MÓDULOS LOCAIS
+{'='*50}
+
+Módulos locais em 'src/':
+  src.audio_effects: não usado
+  src.audio_normalization: não usado
+  src.audio_processing: USADO
+  src.ffmpeg_utils: USADO
+  src.file_operations: USADO
+  src.gui_utils: USADO

@@ -208,7 +208,7 @@ class AudioBomGUI:
         
         footer_text = ttk.Label(
             footer_frame, 
-            text="AudioBom — aplicativo Python de código aberto. Programado por Daniel Ito Isaia em março de 2025.",
+            text="AudioBom 1.0 — aplicativo Python de código aberto. Programado por Daniel Ito Isaia. 2025",
             justify=tk.CENTER,
             foreground="#666666",  # Cor de texto cinza
             font=("Arial", 8)  # Fonte pequena
