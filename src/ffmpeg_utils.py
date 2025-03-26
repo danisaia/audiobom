@@ -68,18 +68,32 @@ def setup_ffmpeg():
                 # Função que oculta janelas de console
                 def _silent_popen(*args, **kwargs):
                     if platform.system() == 'Windows':
-                        si = subprocess.STARTUPINFO()
-                        si.dwFlags |= subprocess.STARTF_USESHOWWINDOW
-                        si.wShowWindow = subprocess.SW_HIDE
-                        kwargs['startupinfo'] = si
-                        kwargs['creationflags'] = subprocess.CREATE_NO_WINDOW
+                        # Certifica-se de que startupinfo existe
+                        if 'startupinfo' not in kwargs:
+                            kwargs['startupinfo'] = subprocess.STARTUPINFO()
+                        # Adiciona flags necessárias para ocultar a janela
+                        kwargs['startupinfo'].dwFlags |= subprocess.STARTF_USESHOWWINDOW
+                        kwargs['startupinfo'].wShowWindow = subprocess.SW_HIDE
+                        # Adiciona creation flags mesmo se já existir
+                        kwargs['creationflags'] = kwargs.get('creationflags', 0) | subprocess.CREATE_NO_WINDOW
                     return pydub.utils._original_subprocess_popen(*args, **kwargs)
                 
-                # Substitui a função
+                # Substitui a função de forma permanente para todas as chamadas em pydub
                 subprocess.Popen = _silent_popen
+                
+                # Também modifica a função que o pydub usa para obter o caminho do player
+                original_get_player = pydub.utils.get_player_name
+                def _get_player_with_path():
+                    return os.environ.get("FFMPEG_BINARY", original_get_player())
+                pydub.utils.get_player_name = _get_player_with_path
+                
                 print("Configurada supressão de janelas do console para FFmpeg")
         except Exception as e:
             print(f"Erro ao configurar PyDub: {e}")
+        
+        # Configure environment de modo permanente para evitar processos visíveis
+        os.environ['IMAGEIO_FFMPEG_EXE'] = ffmpeg_exe
+        os.environ['FFREPORT'] = "file=NUL"  # Evitar reports visuais do ffmpeg
         
         return True
     

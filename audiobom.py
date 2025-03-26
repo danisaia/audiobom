@@ -7,6 +7,7 @@ import warnings
 import urllib.request
 from datetime import datetime
 import platform  # Added missing import for platform module
+import json  # Adicionado para o cache de duração
 
 # Suprime a mensagem do Pygame
 os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = "1"
@@ -122,25 +123,23 @@ class AudioBomGUI:
         # Treeview para lista de arquivos com checkbox
         self.files_tree = ttk.Treeview(
             list_container, 
-            columns=("select", "filename", "duration", "date", "play"),  # Adicionada a coluna "duration"
+            columns=("select", "filename", "date", "play"),  # Removida a coluna "duration"
             show="headings",
             yscrollcommand=scrollbar.set
         )
         self.files_tree.heading("select", text="✓", command=self.toggle_all)
         self.files_tree.heading("filename", text="Nome do arquivo", command=lambda: self.sort_column("filename", False))
-        self.files_tree.heading("duration", text="Duração", command=lambda: self.sort_column("duration", False))  # Adicionada função de ordenação
         self.files_tree.heading("date", text="Data", command=lambda: self.sort_column("date", False))
         self.files_tree.heading("play", text="Prévia")
         self.files_tree.column("select", width=40, anchor=tk.CENTER, stretch=False)
-        self.files_tree.column("filename", width=320, anchor=tk.W)  # Reduzida para acomodar nova coluna
-        self.files_tree.column("duration", width=80, anchor=tk.CENTER)  # Nova coluna
+        self.files_tree.column("filename", width=400, anchor=tk.W)  # Aumentada para usar o espaço da coluna removida
         self.files_tree.column("date", width=150, anchor=tk.CENTER)
         self.files_tree.column("play", width=80, anchor=tk.CENTER, stretch=False)
         self.files_tree.pack(fill=tk.BOTH, expand=True)
         scrollbar.config(command=self.files_tree.yview)
         
         # Armazena o estado atual de ordenação das colunas
-        self.sort_states = {"filename": False, "date": False, "duration": False}  # Adicionado "duration" ao dicionário de estados
+        self.sort_states = {"filename": False, "date": False}  # Removido "duration" do dicionário de estados
         
         # Eventos para a árvore de arquivos
         self.files_tree.bind("<ButtonRelease-1>", self.handle_click)
@@ -209,7 +208,7 @@ class AudioBomGUI:
         
         footer_text = ttk.Label(
             footer_frame, 
-            text="AudioBom, aplicativo Python de código aberto. Programado por Daniel Ito Isaia em março de 2025.",
+            text="AudioBom — aplicativo Python de código aberto. Programado por Daniel Ito Isaia em março de 2025.",
             justify=tk.CENTER,
             foreground="#666666",  # Cor de texto cinza
             font=("Arial", 8)  # Fonte pequena
@@ -234,128 +233,6 @@ class AudioBomGUI:
             self.output_dir.set(directory)
             save_config(self.config_file, self.input_dir.get(), self.output_dir.get())
     
-    def get_audio_duration(self, file_path):
-        """Obtém a duração de um arquivo de áudio em formato MM:SS usando método mais seguro"""
-        try:
-            if not PYDUB_AVAILABLE:
-                return "--:--"
-                
-            # Tenta usar o método direto do pydub primeiro (mais confiável)
-            try:
-                # Modifica a configuração do PyDub para suprimir a saída
-                import pydub.utils
-                import subprocess
-                import platform
-                
-                # Substitui a função subprocess.Popen do pydub para ocultar janelas no Windows
-                original_popen = subprocess.Popen
-                
-                def _silent_popen(*args, **kwargs):
-                    if platform.system() == 'Windows':
-                        if 'startupinfo' not in kwargs:
-                            kwargs['startupinfo'] = subprocess.STARTUPINFO()
-                            kwargs['startupinfo'].dwFlags |= subprocess.STARTF_USESHOWWINDOW
-                            kwargs['startupinfo'].wShowWindow = subprocess.SW_HIDE
-                        if 'creationflags' not in kwargs:
-                            kwargs['creationflags'] = subprocess.CREATE_NO_WINDOW
-                    return original_popen(*args, **kwargs)
-                
-                # Substitui temporariamente a função
-                subprocess.Popen = _silent_popen
-                
-                try:
-                    audio = AudioSegment.from_file(file_path)
-                    duration_sec = int(audio.duration_seconds)
-                    minutes = duration_sec // 60
-                    seconds = duration_sec % 60
-                    return f"{minutes}:{seconds:02d}"
-                finally:
-                    # Restaura a função original
-                    subprocess.Popen = original_popen
-                
-            except Exception as e:
-                # Se falhar com pydub, tenta com ffprobe
-                print(f"Método pydub falhou para {os.path.basename(file_path)}, tentando ffprobe: {e}")
-                
-                # MODIFICAÇÃO: Obtém o caminho absoluto do ffprobe
-                ffprobe_path = self.get_ffprobe_path()
-                
-                # Lida corretamente com caminhos que podem conter caracteres especiais
-                import subprocess
-                import json
-                
-                # Corrige a codificação e captura erros corretamente
-                try:
-                    # Configuração para ocultar janelas de console no Windows
-                    startupinfo = None
-                    creation_flags = 0
-                    
-                    if platform.system() == 'Windows':
-                        startupinfo = subprocess.STARTUPINFO()
-                        startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
-                        startupinfo.wShowWindow = subprocess.SW_HIDE
-                        creation_flags = subprocess.CREATE_NO_WINDOW
-                    
-                    # Usa o caminho absoluto do ffprobe em vez de apenas "ffprobe"
-                    result = subprocess.run(
-                        [ffprobe_path, "-v", "quiet", "-print_format", "json", "-show_format", file_path],
-                        stdout=subprocess.PIPE,
-                        stderr=subprocess.PIPE,
-                        startupinfo=startupinfo,
-                        creationflags=creation_flags if platform.system() == 'Windows' else 0
-                    )
-                    
-                    # Decodifica a saída usando UTF-8 com tratamento de erros
-                    stdout = result.stdout.decode('utf-8', errors='replace')
-                    
-                    # Analisa o resultado JSON
-                    if result.returncode == 0 and stdout.strip():
-                        data = json.loads(stdout)
-                        if "format" in data and "duration" in data["format"]:
-                            duration_sec = float(data["format"]["duration"])
-                            minutes = int(duration_sec // 60)
-                            seconds = int(duration_sec % 60)
-                            return f"{minutes}:{seconds:02d}"
-                except Exception as sub_error:
-                    print(f"Erro ao usar ffprobe: {sub_error}")
-                    
-                # Método estimado baseado no tamanho do arquivo como último recurso
-                try:
-                    # Estimativa muito grosseira baseada no tamanho do arquivo
-                    file_size = os.path.getsize(file_path)
-                    # ~10KB por segundo para MP3 128kbps como estimativa aproximada
-                    estimated_seconds = file_size / (10 * 1024)  
-                    minutes = int(estimated_seconds // 60)
-                    seconds = int(estimated_seconds % 60)
-                    return f"~{minutes}:{seconds:02d}"  # Adiciona ~ para indicar que é estimado
-                except:
-                    pass
-                    
-                return "--:--"  # Retorna isso se todos os métodos falharem
-        except Exception as e:
-            print(f"Erro ao obter duração: {e}")
-            return "--:--"
-    
-    def get_ffprobe_path(self):
-        """Retorna o caminho absoluto para o executável ffprobe"""
-        # Detecta se está rodando a partir do executável do PyInstaller
-        if getattr(sys, 'frozen', False):
-            if hasattr(sys, '_MEIPASS'):
-                base_path = sys._MEIPASS
-            else:
-                base_path = os.path.dirname(sys.executable)
-            ffmpeg_dir = os.path.join(base_path, "ffmpeg")
-        else:
-            ffmpeg_dir = "ffmpeg/"
-        
-        # Define o nome do executável com base no sistema operacional
-        if platform.system() == "Windows":
-            ffprobe_exe = os.path.join(ffmpeg_dir, "bin", "ffprobe.exe")
-        else:
-            ffprobe_exe = os.path.join(ffmpeg_dir, "bin", "ffprobe")
-        
-        return os.path.abspath(ffprobe_exe)
-
     def update_file_list(self):
         # Limpa a árvore atual
         for item in self.files_tree.get_children():
@@ -384,8 +261,8 @@ class AudioBomGUI:
             # Use duração estimada inicialmente para não travar a interface
             duration = "--:--"  # Carregar posteriormente sob demanda
             
-            # Insere o item com cinco colunas: seleção, nome do arquivo, duração, data, play
-            self.files_tree.insert("", tk.END, values=("☐", filename, duration, date_str, "▶"))
+            # Insere o item com quatro colunas: seleção, nome do arquivo, data, play
+            self.files_tree.insert("", tk.END, values=("☐", filename, date_str, "▶"))
             
             # Atualiza a cada 10 arquivos para manter a interface responsiva
             if idx % 10 == 0:
@@ -401,37 +278,6 @@ class AudioBomGUI:
         
         # Restaura o status
         self.status_var.set("Pronto")
-        
-        # Inicia uma thread para carregar as durações em segundo plano
-        threading.Thread(target=self._load_durations_background, daemon=True).start()
-
-    def _load_durations_background(self):
-        """Carrega as durações dos arquivos em segundo plano"""
-        try:
-            items = self.files_tree.get_children()
-            total_items = len(items)
-            
-            for idx, item in enumerate(items):
-                # Obtém informações do item atual
-                values = self.files_tree.item(item, "values")
-                filename = values[1]
-                file_path = os.path.join(self.input_dir.get(), filename)
-                
-                # Calcula a duração
-                duration = self.get_audio_duration(file_path)
-                
-                # Atualiza o item com a duração calculada
-                self.files_tree.item(item, values=(values[0], values[1], duration, values[3], values[4]))
-                
-                # Atualiza status ocasionalmente (a cada 5 arquivos)
-                if idx % 5 == 0:
-                    self.status_var.set(f"Calculando durações ({idx+1}/{total_items})...")
-                    self.root.update_idletasks()
-            
-            # Restaura o status quando concluído
-            self.status_var.set("Pronto")
-        except Exception as e:
-            print(f"Erro ao carregar durações: {e}")
     
     def handle_click(self, event):
         """Gerencia cliques em diferentes partes da tabela"""
@@ -445,7 +291,7 @@ class AudioBomGUI:
                 
             if column == "#1":  # Coluna de seleção
                 self.toggle_selection(item)
-            elif column == "#5":  # Coluna do botão de reprodução (agora é #5 em vez de #4)
+            elif column == "#4":  # Coluna do botão de reprodução (agora é #4 em vez de #4)
                 current_values = self.files_tree.item(item, "values")
                 filename = current_values[1]
                 self.play_audio(filename)
@@ -459,9 +305,9 @@ class AudioBomGUI:
         
         # Alterna entre marcado e desmarcado
         if current_values[0] == "☐":
-            self.files_tree.item(item, values=("☑", current_values[1], current_values[2], current_values[3], current_values[4]))
+            self.files_tree.item(item, values=("☑", current_values[1], current_values[2], current_values[3]))
         else:
-            self.files_tree.item(item, values=("☐", current_values[1], current_values[2], current_values[3], current_values[4]))
+            self.files_tree.item(item, values=("☐", current_values[1], current_values[2], current_values[3]))
 
     def play_audio(self, filename):
         """Reproduz o arquivo de áudio"""
@@ -480,7 +326,7 @@ class AudioBomGUI:
                 pygame.mixer.music.stop()
                 # Restaura o símbolo de play
                 values = self.files_tree.item(item_to_play, "values")
-                self.files_tree.item(item_to_play, values=(values[0], values[1], values[2], values[3], "▶"))
+                self.files_tree.item(item_to_play, values=(values[0], values[1], values[2], "▶"))
                 self.playing_item = None
                 self.status_var.set("Reprodução interrompida")
                 return
@@ -490,7 +336,7 @@ class AudioBomGUI:
                 # Restaura o símbolo de play do item anterior se existir
                 if self.playing_item:
                     prev_values = self.files_tree.item(self.playing_item, "values")
-                    self.files_tree.item(self.playing_item, values=(prev_values[0], prev_values[1], prev_values[2], prev_values[3], "▶"))
+                    self.files_tree.item(self.playing_item, values=(prev_values[0], prev_values[1], prev_values[2], "▶"))
         
         try:
             # Atualiza status
@@ -505,9 +351,8 @@ class AudioBomGUI:
             
             # Atualiza o item atual em reprodução e muda o símbolo para stop
             self.playing_item = item_to_play
-            if item_to_play:
-                values = self.files_tree.item(item_to_play, "values")
-                self.files_tree.item(item_to_play, values=(values[0], values[1], values[2], values[3], "⏹"))
+            values = self.files_tree.item(item_to_play, "values")
+            self.files_tree.item(item_to_play, values=(values[0], values[1], values[2], "⏹"))
             
             # Configura um timer para restaurar o status após reprodução
             thread = threading.Thread(target=self._wait_for_playback_end)
@@ -535,7 +380,7 @@ class AudioBomGUI:
         # Restaura o status e o ícone somente se ainda for o mesmo item
         if self.playing_item:
             values = self.files_tree.item(self.playing_item, "values")
-            self.files_tree.item(self.playing_item, values=(values[0], values[1], values[2], values[3], "▶"))
+            self.files_tree.item(self.playing_item, values=(values[0], values[1], values[2], "▶"))
             self.playing_item = None
         
         self.status_var.set("Pronto")
@@ -559,7 +404,7 @@ class AudioBomGUI:
         new_state = "☐" if all_checked else "☑"
         for item in items:
             values = self.files_tree.item(item, "values")
-            self.files_tree.item(item, values=(new_state, values[1], values[2], values[3], values[4]))
+            self.files_tree.item(item, values=(new_state, values[1], values[2], values[3]))
     
     def sort_column(self, column, reverse):
         """Ordena a coluna clicada em ordem crescente ou decrescente"""
