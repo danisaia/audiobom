@@ -43,6 +43,19 @@ def setup_ffmpeg():
         # Configura a variável FFMPEG_BINARY para o pydub
         os.environ["FFMPEG_BINARY"] = ffmpeg_exe
         os.environ["FFPROBE_BINARY"] = ffprobe_exe
+        
+        # Configuração adicional para suprimir janelas de console em aplicativos compilados
+        os.environ["IMAGEIO_FFMPEG_EXE"] = ffmpeg_exe  # Para imageio-ffmpeg
+        
+        # Configura pydub para usar subprocess sem mostrar janelas
+        try:
+            import pydub.utils
+            def _patched_get_player_name():
+                return os.environ.get("FFMPEG_BINARY", "ffmpeg")
+            pydub.utils.get_player_name = _patched_get_player_name
+        except ImportError:
+            pass
+        
         return True
     
     print(f"FFmpeg não encontrado em: {ffmpeg_exe}")

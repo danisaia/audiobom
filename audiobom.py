@@ -1,10 +1,12 @@
 import os
+import sys
 import threading
 import tkinter as tk
 from tkinter import ttk, messagebox
 import warnings
 import urllib.request
 from datetime import datetime
+import platform  # Added missing import for platform module
 
 # Suprime a mensagem do Pygame
 os.environ['PYGAME_HIDE_SUPPORT_PROMPT'] = "1"
@@ -207,7 +209,7 @@ class AudioBomGUI:
         
         footer_text = ttk.Label(
             footer_frame, 
-            text="Aplicativo Python de código aberto. Programado por Daniel Ito Isaia em 2025.",
+            text="AudioBom, aplicativo Python de código aberto. Programado por Daniel Ito Isaia em março de 2025.",
             justify=tk.CENTER,
             foreground="#666666",  # Cor de texto cinza
             font=("Arial", 8)  # Fonte pequena
@@ -249,18 +251,33 @@ class AudioBomGUI:
                 # Se falhar com pydub, tenta com ffprobe
                 print(f"Método pydub falhou para {os.path.basename(file_path)}, tentando ffprobe: {e}")
                 
+                # MODIFICAÇÃO: Obtém o caminho absoluto do ffprobe
+                ffprobe_path = self.get_ffprobe_path()
+                
                 # Lida corretamente com caminhos que podem conter caracteres especiais
                 import subprocess
                 import json
+                import platform
                 
                 # Corrige a codificação e captura erros corretamente
                 try:
-                    # Usa bytes diretamente em vez de texto para evitar problemas de codificação
+                    # Configuração para ocultar janelas de console no Windows
+                    startupinfo = None
+                    creation_flags = 0
+                    
+                    if platform.system() == 'Windows':
+                        startupinfo = subprocess.STARTUPINFO()
+                        startupinfo.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+                        startupinfo.wShowWindow = subprocess.SW_HIDE
+                        creation_flags = subprocess.CREATE_NO_WINDOW
+                    
+                    # Usa o caminho absoluto do ffprobe em vez de apenas "ffprobe"
                     result = subprocess.run(
-                        ["ffprobe", "-v", "quiet", "-print_format", "json", "-show_format", file_path],
+                        [ffprobe_path, "-v", "quiet", "-print_format", "json", "-show_format", file_path],
                         stdout=subprocess.PIPE,
                         stderr=subprocess.PIPE,
-                        creationflags=subprocess.CREATE_NO_WINDOW  # Impede janelas do console
+                        startupinfo=startupinfo,
+                        creationflags=creation_flags if platform.system() == 'Windows' else 0
                     )
                     
                     # Decodifica a saída usando UTF-8 com tratamento de erros
@@ -294,6 +311,26 @@ class AudioBomGUI:
             print(f"Erro ao obter duração: {e}")
             return "--:--"
     
+    def get_ffprobe_path(self):
+        """Retorna o caminho absoluto para o executável ffprobe"""
+        # Detecta se está rodando a partir do executável do PyInstaller
+        if getattr(sys, 'frozen', False):
+            if hasattr(sys, '_MEIPASS'):
+                base_path = sys._MEIPASS
+            else:
+                base_path = os.path.dirname(sys.executable)
+            ffmpeg_dir = os.path.join(base_path, "ffmpeg")
+        else:
+            ffmpeg_dir = "ffmpeg/"
+        
+        # Define o nome do executável com base no sistema operacional
+        if platform.system() == "Windows":
+            ffprobe_exe = os.path.join(ffmpeg_dir, "bin", "ffprobe.exe")
+        else:
+            ffprobe_exe = os.path.join(ffmpeg_dir, "bin", "ffprobe")
+        
+        return os.path.abspath(ffprobe_exe)
+
     def update_file_list(self):
         # Limpa a árvore atual
         for item in self.files_tree.get_children():
@@ -339,7 +376,37 @@ class AudioBomGUI:
         
         # Restaura o status
         self.status_var.set("Pronto")
-        self.progress_var.set(0)
+        
+        # Inicia uma thread para carregar as durações em segundo plano
+        threading.Thread(target=self._load_durations_background, daemon=True).start()
+
+    def _load_durations_background(self):
+        """Carrega as durações dos arquivos em segundo plano"""
+        try:
+            items = self.files_tree.get_children()
+            total_items = len(items)
+            
+            for idx, item in enumerate(items):
+                # Obtém informações do item atual
+                values = self.files_tree.item(item, "values")
+                filename = values[1]
+                file_path = os.path.join(self.input_dir.get(), filename)
+                
+                # Calcula a duração
+                duration = self.get_audio_duration(file_path)
+                
+                # Atualiza o item com a duração calculada
+                self.files_tree.item(item, values=(values[0], values[1], duration, values[3], values[4]))
+                
+                # Atualiza status ocasionalmente (a cada 5 arquivos)
+                if idx % 5 == 0:
+                    self.status_var.set(f"Calculando durações ({idx+1}/{total_items})...")
+                    self.root.update_idletasks()
+            
+            # Restaura o status quando concluído
+            self.status_var.set("Pronto")
+        except Exception as e:
+            print(f"Erro ao carregar durações: {e}")
     
     def handle_click(self, event):
         """Gerencia cliques em diferentes partes da tabela"""
