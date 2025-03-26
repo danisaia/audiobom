@@ -39,6 +39,18 @@ class AudioBomGUI:
     def __init__(self, root):
         self.root = root
         self.root.title("AudioBom 1.0 - Processador de voz para emissoras de rádio")
+        
+        # Adiciona tratamento de exceção para definir o ícone da janela
+        try:
+            icon_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "audiobom.ico")
+            if os.path.exists(icon_path):
+                self.root.iconbitmap(icon_path)
+                print(f"Ícone carregado: {icon_path}")
+            else:
+                print(f"Arquivo de ícone não encontrado: {icon_path}")
+        except Exception as e:
+            print(f"Erro ao definir ícone: {e}")
+        
         # Aumentando o tamanho inicial da janela para acomodar todos os elementos
         self.root.geometry("750x730")
         self.root.minsize(750, 730)  # Define um tamanho mínimo para a janela

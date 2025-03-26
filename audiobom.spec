@@ -22,6 +22,14 @@ for folder in ['brutos', 'tratados']:
 
 block_cipher = None
 
+# Define o caminho absoluto para o ícone
+icon_path = os.path.join(project_dir, 'audiobom.ico')
+icon_exists = os.path.exists(icon_path)
+if icon_exists:
+    print(f"Ícone encontrado em: {icon_path}")
+else:
+    print("Ícone não encontrado!")
+
 a = Analysis(
     ['audiobom.py'],
     pathex=[],
@@ -33,6 +41,7 @@ a = Analysis(
         # Garantimos que essas pastas existam e sejam incluídas
         ('brutos/.gitkeep', 'brutos'), 
         ('tratados/.gitkeep', 'tratados'),
+        ('audiobom.ico', '.'),  # Incluir o ícone nos dados
     ],
     hiddenimports=[
         'numpy',
@@ -71,7 +80,7 @@ exe = EXE(
     strip=False,
     upx=False,  # UPX desativado conforme solicitado
     console=False,  # Importante: mantenha como False
-    icon='audiobom.ico' if os.path.exists('audiobom.ico') else None,
+    icon=icon_path if icon_exists else None,  # Usa caminho absoluto
     disable_windowed_traceback=False,
     argv_emulation=False,
     target_arch=None,
