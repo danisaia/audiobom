@@ -56,6 +56,31 @@ def setup_ffmpeg():
         except ImportError:
             pass
         
+        # Configuração para suprimir janelas de console no PyDub
+        try:
+            import pydub.utils
+            import subprocess
+            
+            # Guarda a função original
+            if not hasattr(pydub.utils, '_original_subprocess_popen'):
+                pydub.utils._original_subprocess_popen = subprocess.Popen
+                
+                # Função que oculta janelas de console
+                def _silent_popen(*args, **kwargs):
+                    if platform.system() == 'Windows':
+                        si = subprocess.STARTUPINFO()
+                        si.dwFlags |= subprocess.STARTF_USESHOWWINDOW
+                        si.wShowWindow = subprocess.SW_HIDE
+                        kwargs['startupinfo'] = si
+                        kwargs['creationflags'] = subprocess.CREATE_NO_WINDOW
+                    return pydub.utils._original_subprocess_popen(*args, **kwargs)
+                
+                # Substitui a função
+                subprocess.Popen = _silent_popen
+                print("Configurada supressão de janelas do console para FFmpeg")
+        except Exception as e:
+            print(f"Erro ao configurar PyDub: {e}")
+        
         return True
     
     print(f"FFmpeg não encontrado em: {ffmpeg_exe}")

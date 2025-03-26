@@ -242,11 +242,37 @@ class AudioBomGUI:
                 
             # Tenta usar o método direto do pydub primeiro (mais confiável)
             try:
-                audio = AudioSegment.from_file(file_path)
-                duration_sec = int(audio.duration_seconds)
-                minutes = duration_sec // 60
-                seconds = duration_sec % 60
-                return f"{minutes}:{seconds:02d}"
+                # Modifica a configuração do PyDub para suprimir a saída
+                import pydub.utils
+                import subprocess
+                import platform
+                
+                # Substitui a função subprocess.Popen do pydub para ocultar janelas no Windows
+                original_popen = subprocess.Popen
+                
+                def _silent_popen(*args, **kwargs):
+                    if platform.system() == 'Windows':
+                        if 'startupinfo' not in kwargs:
+                            kwargs['startupinfo'] = subprocess.STARTUPINFO()
+                            kwargs['startupinfo'].dwFlags |= subprocess.STARTF_USESHOWWINDOW
+                            kwargs['startupinfo'].wShowWindow = subprocess.SW_HIDE
+                        if 'creationflags' not in kwargs:
+                            kwargs['creationflags'] = subprocess.CREATE_NO_WINDOW
+                    return original_popen(*args, **kwargs)
+                
+                # Substitui temporariamente a função
+                subprocess.Popen = _silent_popen
+                
+                try:
+                    audio = AudioSegment.from_file(file_path)
+                    duration_sec = int(audio.duration_seconds)
+                    minutes = duration_sec // 60
+                    seconds = duration_sec % 60
+                    return f"{minutes}:{seconds:02d}"
+                finally:
+                    # Restaura a função original
+                    subprocess.Popen = original_popen
+                
             except Exception as e:
                 # Se falhar com pydub, tenta com ffprobe
                 print(f"Método pydub falhou para {os.path.basename(file_path)}, tentando ffprobe: {e}")
@@ -257,7 +283,6 @@ class AudioBomGUI:
                 # Lida corretamente com caminhos que podem conter caracteres especiais
                 import subprocess
                 import json
-                import platform
                 
                 # Corrige a codificação e captura erros corretamente
                 try:
