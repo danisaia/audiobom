@@ -2,3 +2,4 @@ numpy>=1.19.0
 pydub>=0.25.1
 pyloudnorm>=0.1.0
 tqdm>=4.48.0
+pygame>=2.0.0pygame>=2.0.0
