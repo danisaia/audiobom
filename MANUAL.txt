@@ -1,0 +1,35 @@
+MANUAL DO AUDIOBOM 1.0
+=====================
+
+Bem-vindo ao AudioBom!
+
+Este programa foi feito para facilitar o tratamento de áudios de voz, especialmente para rádios, podcasts e gravações caseiras.
+
+O que o AudioBom faz?
+---------------------
+- Melhora a qualidade do áudio automaticamente
+- Ajusta o volume para um padrão profissional
+- Remove picos e ruídos comuns
+- Salva o resultado em MP3 de alta qualidade
+
+Como usar o AudioBom
+--------------------
+1. Abra o programa (clique duas vezes em AudioBom.exe)
+2. Na parte "Pasta de áudios brutos", clique em "Procurar..." e escolha a pasta onde estão seus áudios originais.
+3. Em "Pasta de destino", clique em "Procurar..." e escolha onde salvar os áudios prontos.
+4. Marque os arquivos que deseja processar na lista.
+5. (Opcional) Clique no botão de "play" para ouvir uma prévia de cada arquivo.
+6. Clique em "Executar" para iniciar o processamento.
+7. Aguarde até aparecer a mensagem de conclusão.
+8. Pronto! Os arquivos tratados estarão na pasta de destino.
+
+Dicas importantes
+-----------------
+- Não feche o programa enquanto estiver processando.
+- O programa aceita arquivos MP3 e WAV.
+- Se aparecer alguma mensagem de erro, leia com atenção e siga as instruções.
+
+Sobre
+-----
+AudioBom 1.0 — Programa gratuito e de código aberto.
+Desenvolvido por Daniel Ito Isaia, 2025.
