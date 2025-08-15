@@ -41,7 +41,7 @@ from src.gui_utils import center_window, save_config, load_config, browse_direct
 class AudioBomGUI:
     def __init__(self, root):
         self.root = root
-        self.root.title("AudioBom 1.0 - Processador de voz para emissoras de rádio")
+        self.root.title("AudioBom 1.0")
         
         # Adiciona tratamento de exceção para definir o ícone da janela
         try:
@@ -55,27 +55,27 @@ class AudioBomGUI:
             print(f"Erro ao definir ícone: {e}")
         
         # Aumentando o tamanho inicial da janela para acomodar todos os elementos
-        self.root.geometry("750x730")
-        self.root.minsize(750, 730)  # Define um tamanho mínimo para a janela
+        self.root.geometry("750x800")
+        self.root.minsize(750, 800)  # Define um tamanho mínimo para a janela
         self.root.resizable(True, True)
-        
+
         # Define o caminho do arquivo de configuração
         self.config_file = os.path.join(os.path.dirname(os.path.abspath(__file__)), "audiobom_config.json")
-        
+
         # Carrega configurações salvas anteriormente
         input_dir, output_dir = load_config(self.config_file)
         self.input_dir = tk.StringVar(value=input_dir)
         self.output_dir = tk.StringVar(value=output_dir)
-        
+
         # Ajuste para centralizar a janela na tela
         center_window(self.root)
-        
+
         self.setup_ui()
         self.update_file_list()
-        
+
         # Configura o evento de fechamento da janela
         self.root.protocol("WM_DELETE_WINDOW", self.on_close)
-        
+
         self.is_playing = False
         self.current_audio = None
         self.playing_item = None  # Armazena o item atualmente em reprodução
@@ -83,38 +83,67 @@ class AudioBomGUI:
     def setup_ui(self):
         # Frame principal com padding adequado
         main_frame = ttk.Frame(self.root, padding="15")
-        main_frame.pack(fill=tk.BOTH, expand=True, padx=10, pady=10)
+        main_frame.grid(row=0, column=0, sticky="nsew", padx=10, pady=10)
+        self.root.grid_rowconfigure(0, weight=1)
+        self.root.grid_columnconfigure(0, weight=1)
+        # Distribui o espaço vertical entre as linhas principais
+        main_frame.grid_rowconfigure(0, weight=0)  # info_frame
+        main_frame.grid_rowconfigure(1, weight=0)  # separator
+        main_frame.grid_rowconfigure(2, weight=0)  # input_frame
+        main_frame.grid_rowconfigure(3, weight=2)  # files_frame (lista de arquivos)
+        main_frame.grid_rowconfigure(4, weight=0)  # output_frame
+        main_frame.grid_rowconfigure(5, weight=0)  # progress_frame
+        main_frame.grid_rowconfigure(6, weight=0)  # status_frame
+        main_frame.grid_rowconfigure(7, weight=0)  # buttons_frame
+        main_frame.grid_rowconfigure(8, weight=0)  # footer_separator
+        main_frame.grid_rowconfigure(9, weight=0)  # footer_frame
         
         # Texto informativo
         info_frame = ttk.Frame(main_frame)
-        info_frame.pack(fill=tk.X, pady=8)
+        info_frame.grid(row=0, column=0, sticky="ew", pady=8)
+        main_frame.grid_columnconfigure(0, weight=1)
         
+
+        # Frase centralizada
+        main_phrase = "Processador de voz livre e gratuito para emissoras de rádio e podcasts."
+        main_label = ttk.Label(info_frame, text=main_phrase, justify=tk.CENTER, wraplength=750, anchor="center", font=("Arial", 10, "bold"))
+        main_label.grid(row=0, column=0, sticky="ew", padx=5, pady=(5, 0))
+
+        # Lista simplificada dos passos do processamento
         info_text = (
-            "Tratamento simples e completo de áudios de VOZ (offs, sonoras, entrevistas) para serem veiculados em qualidade de rádio FM."
+            "\nProcessamento aplicado aos áudios:\n"
+            "1. Conversão para estéreo e 44.1kHz\n"
+            "2. Compressão, equalização e de-essing (FFmpeg)\n"
+            "3. Normalização de loudness (-16 LUFS)\n"
+            "4. Limitação de picos a -6 dBFS\n"
+            "5. Exportação em MP3 192kbps\n"
         )
-        
-        info_label = ttk.Label(info_frame, text=info_text, justify=tk.CENTER, wraplength=750, anchor="center")
-        info_label.pack(fill=tk.X, padx=5, pady=5)
+        info_label = ttk.Label(info_frame, text=info_text, justify=tk.LEFT, wraplength=750, anchor="w")
+        info_label.grid(row=1, column=0, sticky="ew", padx=5, pady=(0, 5))
         
         # Adiciona um separador após o texto informativo
         separator = ttk.Separator(main_frame, orient='horizontal')
-        separator.pack(fill=tk.X, pady=8)
+        separator.grid(row=1, column=0, sticky="ew", pady=8)
         
         # Diretório de entrada
         input_frame = ttk.LabelFrame(main_frame, text="Pasta de áudios brutos", padding="10")
-        input_frame.pack(fill=tk.X, pady=8)
+        input_frame.grid(row=2, column=0, sticky="ew", pady=8)
         
-        ttk.Entry(input_frame, textvariable=self.input_dir).pack(side=tk.LEFT, fill=tk.X, expand=True, padx=5)
-        ttk.Button(input_frame, text="Procurar...", command=self.browse_input_dir).pack(side=tk.RIGHT, padx=5)
+        ttk.Entry(input_frame, textvariable=self.input_dir).grid(row=0, column=0, sticky="ew", padx=5)
+        ttk.Button(input_frame, text="Procurar...", command=self.browse_input_dir).grid(row=0, column=1, padx=5)
+        input_frame.grid_columnconfigure(0, weight=1)
         
         # Lista de arquivos - altura reduzida para metade
         files_frame = ttk.LabelFrame(main_frame, text="Arquivos disponíveis", padding="10")
-        files_frame.pack(fill=tk.X, pady=8)  # Mudado de fill=tk.BOTH para fill=tk.X e removido expand=True
+        files_frame.grid(row=3, column=0, sticky="nsew", pady=8)
+        # main_frame.grid_rowconfigure(3, weight=2) já definido acima
         
         # Define uma altura fixa para a lista de arquivos (metade do tamanho original)
         list_container = ttk.Frame(files_frame, height=180)  # Altura fixa de 180 pixels
-        list_container.pack(fill=tk.BOTH, expand=True, padx=5, pady=5)
+        list_container.grid(row=0, column=0, sticky="nsew", padx=5, pady=5)
         list_container.pack_propagate(False)  # Impede que o frame seja redimensionado pelos filhos
+        files_frame.grid_rowconfigure(0, weight=1)
+        files_frame.grid_columnconfigure(0, weight=1)
         
         # Scrollbar para a lista de arquivos
         scrollbar = ttk.Scrollbar(list_container)
@@ -146,14 +175,15 @@ class AudioBomGUI:
         
         # Diretório de saída
         output_frame = ttk.LabelFrame(main_frame, text="Pasta de destino", padding="10")
-        output_frame.pack(fill=tk.X, pady=8)
+        output_frame.grid(row=4, column=0, sticky="ew", pady=8)
         
-        ttk.Entry(output_frame, textvariable=self.output_dir).pack(side=tk.LEFT, fill=tk.X, expand=True, padx=5)
-        ttk.Button(output_frame, text="Procurar...", command=self.browse_output_dir).pack(side=tk.RIGHT, padx=5)
+        ttk.Entry(output_frame, textvariable=self.output_dir).grid(row=0, column=0, sticky="ew", padx=5)
+        ttk.Button(output_frame, text="Procurar...", command=self.browse_output_dir).grid(row=0, column=1, padx=5)
+        output_frame.grid_columnconfigure(0, weight=1)
         
         # Barra de progresso com mais espaço
         progress_frame = ttk.Frame(main_frame)
-        progress_frame.pack(fill=tk.X, pady=8)
+        progress_frame.grid(row=5, column=0, sticky="ew", pady=8)
         
         self.progress_var = tk.DoubleVar()
         self.progress = ttk.Progressbar(progress_frame, variable=self.progress_var, maximum=100)
@@ -161,7 +191,7 @@ class AudioBomGUI:
         
         # Status com mais espaço
         status_frame = ttk.Frame(main_frame)
-        status_frame.pack(fill=tk.X, pady=5)
+        status_frame.grid(row=6, column=0, sticky="ew", pady=5)
         
         self.status_var = tk.StringVar(value="Pronto")
         status_label = ttk.Label(status_frame, textvariable=self.status_var, anchor=tk.W)
@@ -169,7 +199,11 @@ class AudioBomGUI:
         
         # Botões centralizados e lado a lado
         buttons_frame = ttk.Frame(main_frame)
-        buttons_frame.pack(fill=tk.X, pady=20)
+        buttons_frame.grid(row=7, column=0, sticky="ew", pady=20)
+        # Centraliza o frame de botões
+        buttons_frame.grid_columnconfigure(0, weight=1)
+        center_frame = ttk.Frame(buttons_frame)
+        center_frame.pack(anchor=tk.CENTER)
         
         # Frame centralizado para os botões
         center_frame = ttk.Frame(buttons_frame)
@@ -200,12 +234,12 @@ class AudioBomGUI:
         
         # Adiciona um separador antes do rodapé
         footer_separator = ttk.Separator(main_frame, orient='horizontal')
-        footer_separator.pack(fill=tk.X, pady=10)
-        
+        footer_separator.grid(row=8, column=0, sticky="ew", pady=10)
+
         # Rodapé com informações sobre o autor
         footer_frame = ttk.Frame(main_frame)
-        footer_frame.pack(fill=tk.X, pady=5)
-        
+        footer_frame.grid(row=9, column=0, sticky="ew", pady=5)
+
         footer_text = ttk.Label(
             footer_frame, 
             text="AudioBom 1.0 — aplicativo Python de código aberto. Programado por Daniel Ito Isaia. 2025",
