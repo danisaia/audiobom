@@ -30,9 +30,9 @@ def save_config(config_file, input_dir, output_dir):
 
 def load_config(config_file):
     """Carrega configurações salvas de um arquivo JSON"""
-    input_dir = os.path.join(os.getcwd(), "brutos")
-    output_dir = os.path.join(os.getcwd(), "tratados")
-    
+    input_dir = ""
+    output_dir = ""
+
     try:
         if os.path.exists(config_file):
             with open(config_file, "r") as f:

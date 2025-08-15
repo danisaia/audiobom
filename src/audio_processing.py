@@ -123,7 +123,7 @@ def process_audio(audio_path, output_path, show_progress=True, progress_callback
         os.makedirs(os.path.dirname(output_path), exist_ok=True)
         audio.export(output_path, format="mp3", bitrate="192k",
                     tags={"title": os.path.basename(output_path), 
-                         "artist": "Audio Processor"},
+                         "artist": "AudioBom"},
                     parameters=["-q:a", "0"])
     
     if progress_bar:

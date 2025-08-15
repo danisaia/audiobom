@@ -271,9 +271,14 @@ class AudioBomGUI:
         # Limpa a árvore atual
         for item in self.files_tree.get_children():
             self.files_tree.delete(item)
-        
+
+        input_dir = self.input_dir.get()
+        if not input_dir:
+            self.status_var.set("Selecione a pasta de áudios brutos.")
+            return
+
         # Lista arquivos de áudio no diretório
-        audio_files = list_audio_files(self.input_dir.get())
+        audio_files = list_audio_files(input_dir)
         
         # Atualiza o status para mostrar que está carregando
         self.status_var.set("Carregando informações dos arquivos...")

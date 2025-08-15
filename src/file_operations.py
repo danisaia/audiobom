@@ -2,20 +2,13 @@ import os
 import sys
 
 def list_audio_files(directory):
-    """Lista todos os arquivos de áudio no diretório especificado"""
-    audio_extensions = ['.mp3', '.wav', '.flac', '.ogg', '.aac', '.m4a']
-    audio_files = []
-    
+    """Lista arquivos de áudio (MP3/WAV) no diretório especificado"""
+    if not directory:
+        return []
     if not os.path.exists(directory):
         os.makedirs(directory)
-        print(f"Pasta '{directory}' criada.")
-        return []
-    
-    for filename in os.listdir(directory):
-        if any(filename.lower().endswith(ext) for ext in audio_extensions):
-            audio_files.append(filename)
-    
-    return sorted(audio_files)
+    files = [f for f in os.listdir(directory) if f.lower().endswith(('.mp3', '.wav'))]
+    return files
 
 def setup_logging():
     """Configura o sistema de log para o aplicativo"""

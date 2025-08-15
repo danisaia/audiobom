@@ -161,24 +161,32 @@ def download_ffmpeg():
         print("Extraindo FFmpeg...")
         with zipfile.ZipFile(zip_filename, 'r') as zip_ref:
             zip_ref.extractall(ffmpeg_dir)
-        
-        # Reorganiza os arquivos (no Windows, os arquivos estão em uma subpasta)
-        if system == "Windows":
-            extracted_dir = None
+
+        # Após extrair, encontre a subpasta "bin" e mova só os executáveis necessários
+        bin_dir = None
+        for root, dirs, files in os.walk(ffmpeg_dir):
+            if os.path.basename(root) == "bin":
+                bin_dir = root
+                break
+
+        if bin_dir:
+            for exe in ["ffmpeg.exe", "ffprobe.exe"]:
+                src = os.path.join(bin_dir, exe)
+                dst = os.path.join(ffmpeg_dir, "bin", exe)
+                os.makedirs(os.path.dirname(dst), exist_ok=True)
+                shutil.move(src, dst)
+            # Opcional: Remova tudo que não for a pasta ffmpeg/bin
             for item in os.listdir(ffmpeg_dir):
-                if os.path.isdir(os.path.join(ffmpeg_dir, item)) and item.startswith("ffmpeg"):
-                    extracted_dir = os.path.join(ffmpeg_dir, item)
-                    break
-            
-            if extracted_dir:
-                # Move o conteúdo para a pasta ffmpeg/
-                for item in os.listdir(extracted_dir):
-                    shutil.move(os.path.join(extracted_dir, item), os.path.join(ffmpeg_dir, item))
-                # Remove a pasta vazia
-                shutil.rmtree(extracted_dir)
+                if item != "bin":
+                    path = os.path.join(ffmpeg_dir, item)
+                    if os.path.isdir(path):
+                        shutil.rmtree(path)
+                    else:
+                        os.remove(path)
         
         # Remove o arquivo zip
-        os.remove(zip_filename)
+        if os.path.exists(zip_filename):
+            os.remove(zip_filename)
         
         print("FFmpeg baixado e instalado com sucesso!")
         return check_ffmpeg()
