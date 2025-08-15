@@ -454,9 +454,10 @@ class AudioBomGUI:
     def _process_files_thread(self, selected_files):
         import traceback
         from src.file_operations import setup_logging
+        import concurrent.futures
         
         logger = setup_logging()
-        logger.info(f"Iniciando processamento de {len(selected_files)} arquivos")
+        logger.info(f"Iniciando processamento de {len(selected_files)} arquivos (paralelo)")
         
         self.status_var.set("Verificando FFmpeg...")
         self.root.update_idletasks()
@@ -469,41 +470,45 @@ class AudioBomGUI:
             messagebox.showerror("Erro", "FFmpeg não encontrado. Verifique a instalação.")
             return
         
-        # Armazena o número total de arquivos para cálculo de progresso
         self.total_files = len(selected_files)
-        
-        for i, filename in enumerate(selected_files):
+        results = []
+        errors = []
+        max_workers = min(4, self.total_files)  # Ajuste conforme necessário
+
+        def process_one(args):
+            i, filename = args
             try:
-                # Armazena o índice do arquivo atual para o callback de progresso
-                self.current_file_idx = i
-                
-                # Atualiza status
-                self.status_var.set(f"Processando {i+1}/{self.total_files}: {filename}")
-                self.root.update_idletasks()
-                
-                # Caminhos completos
                 input_path = os.path.join(self.input_dir.get(), filename)
                 output_path = os.path.join(self.output_dir.get(), os.path.splitext(filename)[0] + ".mp3")
-                
                 logger.info(f"Processando arquivo: {input_path} -> {output_path}")
-                
-                # Processa o arquivo passando o callback de progresso
-                process_audio(input_path, output_path, show_progress=False, 
-                              progress_callback=self.progress_callback)
-                
+                # Callback para progresso deste arquivo
+                def file_progress_callback(step, total_steps, description=""):
+                    self.current_file_idx = i
+                    self.progress_callback(step, total_steps, description)
+                ok = process_audio(input_path, output_path, show_progress=False, progress_callback=file_progress_callback)
                 logger.info(f"Arquivo processado com sucesso: {filename}")
-                
+                return (filename, ok, None)
             except Exception as e:
                 err_msg = f"Erro ao processar {filename}: {str(e)}"
                 logger.error(err_msg)
                 logger.error(traceback.format_exc())
-                self.status_var.set(err_msg)
-                self.root.update_idletasks()
-        
-        # Finaliza
+                return (filename, False, err_msg)
+
+        with concurrent.futures.ThreadPoolExecutor(max_workers=max_workers) as executor:
+            futures = [executor.submit(process_one, (i, filename)) for i, filename in enumerate(selected_files)]
+            for fut in concurrent.futures.as_completed(futures):
+                filename, ok, err = fut.result()
+                results.append((filename, ok))
+                if err:
+                    errors.append(err)
+
         self.progress_var.set(100)
-        self.status_var.set(f"Concluído! {self.total_files} arquivos processados.")
-        messagebox.showinfo("Concluído", f"Processamento concluído com sucesso!\n{self.total_files} arquivos processados.")
+        if errors:
+            self.status_var.set(f"Concluído com erros em {len(errors)} arquivos.")
+            messagebox.showwarning("Concluído com erros", f"Processamento concluído com erros em {len(errors)} arquivos.\nVeja o log para detalhes.")
+        else:
+            self.status_var.set(f"Concluído! {self.total_files} arquivos processados.")
+            messagebox.showinfo("Concluído", f"Processamento concluído com sucesso!\n{self.total_files} arquivos processados.")
 
 if __name__ == "__main__":
     # Assegura que o diretório de trabalho seja o diretório do script

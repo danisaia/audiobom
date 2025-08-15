@@ -1,3 +1,22 @@
+import subprocess
+import tempfile
+import os
+
+def apply_ffmpeg_filters(input_audio, output_audio, filter_str, ffmpeg_path='ffmpeg'):
+    """
+    Aplica filtros FFmpeg diretamente em um arquivo de áudio.
+    input_audio: caminho do arquivo de entrada (wav/mp3)
+    output_audio: caminho do arquivo de saída (wav/mp3)
+    filter_str: string de filtros FFmpeg (ex: 'acompressor,adeesser,equalizer=f=3000:t=q:w=200:g=3')
+    ffmpeg_path: caminho para o executável ffmpeg
+    """
+    cmd = [
+        ffmpeg_path, '-y', '-i', input_audio,
+        '-af', filter_str,
+        output_audio
+    ]
+    subprocess.run(cmd, check=True)
+
 import os
 import sys
 import platform

@@ -71,60 +71,26 @@ def process_audio(audio_path, output_path, show_progress=True, progress_callback
         if progress_bar:
             progress_bar.close()
         return False
-    
-    # Extrai informações do arquivo original para exibir depois
+
     original_info = f"Original: canais={audio.channels}, taxa={audio.frame_rate}Hz, pico={audio.max_dBFS:.2f}dB"
-    
+
     # 1. Converte para estéreo se estiver em mono
     with redirect_stdout(log_output):
         if audio.channels == 1:
             audio = audio.set_channels(2)
-    
         # 2. Define taxa de amostragem para 44100 Hz
         if audio.frame_rate != 44100:
             audio = audio.set_frame_rate(44100)
-    
+
     if progress_bar:
         progress_bar.update(1)
         progress_bar.set_description_str(f"{processing_steps[2]:<30}")
     if progress_callback:
         progress_callback(2, total_steps, processing_steps[2])
-    
-    # 3. Processamento de dinâmica
-    with redirect_stdout(log_output):
-        audio = dynamics_processor(audio, silent=False)
-    if progress_bar:
-        progress_bar.update(1)
-        progress_bar.set_description_str(f"{processing_steps[3]:<30}")
+
+    # ...existing code...
     if progress_callback:
-        progress_callback(3, total_steps, processing_steps[3])
-    
-    # 4. Processamento de voz
-    with redirect_stdout(log_output):
-        audio = enhance_speech(audio)
-    if progress_bar:
-        progress_bar.update(1)
-        progress_bar.set_description_str(f"{processing_steps[4]:<30}")
-    if progress_callback:
-        progress_callback(4, total_steps, processing_steps[4])
-    
-    # 5. De-essing
-    with redirect_stdout(log_output):
-        audio = deess(audio)
-    if progress_bar:
-        progress_bar.update(1)
-        progress_bar.set_description_str(f"{processing_steps[5]:<30}")
-    if progress_callback:
-        progress_callback(5, total_steps, processing_steps[5])
-    
-    # 6. Compressão multibanda
-    with redirect_stdout(log_output):
-        audio = multiband_compression(audio)
-    if progress_bar:
-        progress_bar.update(1)
-        progress_bar.set_description_str(f"{processing_steps[6]:<30}")
-    if progress_callback:
-        progress_callback(6, total_steps, processing_steps[6])
+        progress_callback(6, total_steps, "Compressão/EQ/De-essing (Python DSP)")
     
     # 7. Normalização de loudness
     with redirect_stdout(log_output):

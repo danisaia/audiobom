@@ -35,67 +35,61 @@ def dynamics_processor(audio, silent=False):
     avg_level = audio.dBFS
     if not silent:
         print(f"Nível médio do áudio: {avg_level:.1f} dB")
-    
+
     # Thresholds para compressão e expansão
     high_threshold = avg_level + 6  # 6dB acima da média para compressão
     low_threshold = avg_level - 8   # 8dB abaixo da média para expansão
-    
+
     # Parâmetros de processamento
     compress_ratio = 2.5      # Ratio moderado para compressão (sílabas fortes)
     expand_ratio = 1.5        # Ratio para expansão (sílabas fracas)
-    segment_length = 50       # ms - tamanho dos segmentos para processamento granular
-    
-    if not silent:
-        print(f"Aplicando processamento com threshold superior: {high_threshold:.1f} dB, threshold inferior: {low_threshold:.1f} dB")
-    
-    # Processamos o áudio em pequenos pedaços para aplicar processamento com mais controle
-    segments = []
-    for i in range(0, len(audio), segment_length):
-        segment = audio[i:i+segment_length]
-        segment_level = segment.dBFS
-        
-        # Pula segmentos muito silenciosos (podem ser pausas naturais)
-        if segment_level < -50:
-            segments.append(segment)
-            continue
-        
-        # 1. Compressão para sílabas fortes
-        if segment_level > high_threshold:
-            diff = segment_level - high_threshold
-            reduction = diff * (1 - 1/compress_ratio)
-            segment = segment.apply_gain(-reduction)
-            
-            # Aplicamos um pouco de ganho de make-up para manter o volume percebido
-            makeup_gain = min(reduction * 0.5, 3)  # No máximo 3dB de makeup
-            segment = segment.apply_gain(makeup_gain)
-        
-        # 2. Expansão para sílabas fracas (novo!)
-        elif segment_level < low_threshold and segment_level > -40:  # Não processamos partes muito silenciosas
-            diff = low_threshold - segment_level
-            boost = diff * (1 - 1/expand_ratio)
-            boost = min(boost, 6)  # Limitamos o boost a 6dB para evitar artefatos
-            segment = segment.apply_gain(boost)
-        
-        segments.append(segment)
-    
-    # Concatenamos todos os segmentos processados
-    processed_audio = segments[0]
-    for segment in segments[1:]:
-        processed_audio += segment
-    
+
+    # Converte para NumPy array
+    arr = np.array(audio.get_array_of_samples()).astype(np.float32)
+    arr_db = 20 * np.log10(np.abs(arr) / 32768.0 + 1e-10)
+
+    # Máscaras para regiões
+    mask_silence = arr_db < -50
+    mask_strong = arr_db > high_threshold
+    mask_weak = (arr_db < low_threshold) & (arr_db > -40)
+
+    # Compressão para sílabas fortes
+    arr_out = arr.copy()
+    if np.any(mask_strong):
+        diff = arr_db[mask_strong] - high_threshold
+        reduction = diff * (1 - 1/compress_ratio)
+        arr_out[mask_strong] *= 10 ** (-reduction / 20)
+        # Make-up gain
+        makeup_gain = np.minimum(reduction * 0.5, 3)
+        arr_out[mask_strong] *= 10 ** (makeup_gain / 20)
+
+    # Expansão para sílabas fracas
+    if np.any(mask_weak):
+        diff = low_threshold - arr_db[mask_weak]
+        boost = diff * (1 - 1/expand_ratio)
+        boost = np.minimum(boost, 6)
+        arr_out[mask_weak] *= 10 ** (boost / 20)
+
+    # Silêncio permanece igual
+    arr_out[mask_silence] = arr[mask_silence]
+
+    # Clipping
+    arr_out = np.clip(arr_out, -32768, 32767)
+
+    # Cria novo AudioSegment
+    processed_audio = audio._spawn(arr_out.astype(np.int16).tobytes())
+
     # Normalização suave para manter o volume percebido
     final_level = processed_audio.dBFS
     if abs(final_level - avg_level) > 2:
-        # Trazemos o nível médio de volta para perto do nível original
         makeup_gain = avg_level - final_level
-        # Limitamos o ganho para evitar distorções
         makeup_gain = max(min(makeup_gain, 4), -4)
         processed_audio = processed_audio.apply_gain(makeup_gain)
         if not silent:
             print(f"Ajuste final de nível: {makeup_gain:.1f} dB")
-    
+
     # Estatísticas finais
     if not silent:
         print(f"Dinâmica antes: {audio.max_dBFS - audio.dBFS:.1f} dB, depois: {processed_audio.max_dBFS - processed_audio.dBFS:.1f} dB")
-    
+
     return processed_audio
