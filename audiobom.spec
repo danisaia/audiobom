@@ -101,7 +101,7 @@ a = Analysis(
         
         # Módulos web e rede
         'urllib.robotparser', 'xml.dom.domreg', 'xml.sax.saxutils',
-        'socket', 'ssl', 'ftplib',
+        'ssl', 'ftplib',
         
         # Para pydub, exclua componentes não utilizados
         'pydub.playback', 'pydub.scipy_effects', 'pydub.silence',
