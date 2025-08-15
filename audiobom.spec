@@ -46,6 +46,8 @@ a = Analysis(
         ('brutos/.gitkeep', 'brutos'), 
         ('tratados/.gitkeep', 'tratados'),
         ('audiobom.ico', '.'),  # Incluir o ícone nos dados
+        ('README.md', '.'),     # Inclui o README.md
+        ('MANUAL.txt', '.'),    # Inclui o MANUAL.txt
     ],
     hiddenimports=[
         'numpy',
