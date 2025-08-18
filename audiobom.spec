@@ -9,7 +9,8 @@ a = Analysis(
         ('audiobom.ico', '.'),
         ('MANUAL.txt', '.'),
         ('README.md', '.'),
-        ('ffmpeg/bin/ffmpeg.exe', 'ffmpeg'),
+        ('ffmpeg/bin/ffmpeg.exe', 'ffmpeg/bin'),
+        ('ffmpeg/bin/ffprobe.exe', 'ffmpeg/bin'),
     ],
     hiddenimports=[
         'scipy._cyutility',
