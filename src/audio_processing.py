@@ -104,10 +104,10 @@ def process_audio(audio_path, output_path, show_progress=True, progress_callback
     # 8. Limitador de pico
     peak_info = ""
     with redirect_stdout(log_output):
-        if audio.max_dBFS > -6.0:
-            reduction = -6.0 - audio.max_dBFS
+        if audio.max_dBFS > -5.0:
+            reduction = -5.0 - audio.max_dBFS
             audio = audio.apply_gain(reduction)
-            peak_info = f"Picos limitados a -6 dB (redução de {-reduction:.1f} dB)"
+            peak_info = f"Picos limitados a -5 dB (redução de {-reduction:.1f} dB)"
     
     if progress_bar:
         progress_bar.update(1)

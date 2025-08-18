@@ -6,7 +6,7 @@
 - Conversão automática para estéreo e 44.1kHz
 - Compressão, equalização e de-essing (via FFmpeg)
 - Normalização de loudness para -16 LUFS
-- Limitação de picos a -6 dBFS
+- Limitação de picos a -5 dBFS
 - Exportação em MP3 192kbps
 - Interface gráfica simples e intuitiva
 

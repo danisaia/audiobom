@@ -115,7 +115,7 @@ class AudioBomGUI:
             "1. Conversão para estéreo e 44.1kHz\n"
             "2. Compressão, equalização e de-essing (FFmpeg)\n"
             "3. Normalização de loudness (-16 LUFS)\n"
-            "4. Limitação de picos a -6 dBFS\n"
+            "4. Limitação de picos a -5 dBFS\n"
             "5. Exportação em MP3 192kbps\n"
         )
         info_label = ttk.Label(info_frame, text=info_text, justify=tk.LEFT, wraplength=750, anchor="w")
