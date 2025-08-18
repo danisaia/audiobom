@@ -450,6 +450,10 @@ class AudioBomGUI:
         sort_tree_column(self.files_tree, column, self.sort_states)
     
     def process_files(self):
+        if not self.output_dir.get():
+            messagebox.showinfo("Destino não definido", "Por favor, selecione uma pasta de destino para salvar os arquivos processados.")
+            return
+        
         selected_files = []
         for item in self.files_tree.get_children():
             values = self.files_tree.item(item, "values")

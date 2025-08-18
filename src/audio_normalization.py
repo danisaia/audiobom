@@ -30,19 +30,17 @@ def dynamics_processor(audio, silent=False):
     """Processa a dinâmica da voz para reduzir a variação entre sílabas fortes e fracas"""
     if not silent:
         print("Aplicando compressão de dinâmica para voz...")
-    
-    # Análise inicial do áudio para determinar níveis
+
     avg_level = audio.dBFS
     if not silent:
         print(f"Nível médio do áudio: {avg_level:.1f} dB")
 
-    # Thresholds para compressão e expansão
-    high_threshold = avg_level + 6  # 6dB acima da média para compressão
-    low_threshold = avg_level - 8   # 8dB abaixo da média para expansão
+    # Parâmetros mais agressivos
+    high_threshold = avg_level + 1    # Compressão começa quase na média
+    low_threshold = avg_level - 4     # Expansão mais ampla
 
-    # Parâmetros de processamento
-    compress_ratio = 2.5      # Ratio moderado para compressão (sílabas fortes)
-    expand_ratio = 1.5        # Ratio para expansão (sílabas fracas)
+    compress_ratio = 6.0              # Compressão bem forte (6:1)
+    expand_ratio = 3.0                # Expansão mais forte (3:1)
 
     # Converte para NumPy array
     arr = np.array(audio.get_array_of_samples()).astype(np.float32)
